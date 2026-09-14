@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { Mail, AlertCircle } from 'lucide-react';
 import AzimovLogo from '../components/AzimovLogo';
@@ -88,11 +89,19 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 pt-4 border-t border-white/10">
-            <p className="text-xs text-blue-200/50 mb-2">Тестовые аккаунты:</p>
-            <div className="space-y-1 text-xs text-blue-200/70">
-              <p><span className="text-blue-300">Админ:</span> admin@azimovclub.com</p>
-              <p><span className="text-blue-300">Методист:</span> methodist@azimovclub.com</p>
-              <p><span className="text-blue-300">Преподаватель:</span> teacher1@azimovclub.com</p>
+            <p className="text-sm text-blue-200/70 text-center mb-3">
+              Нет аккаунта?{' '}
+              <Link to="/register" className="text-blue-300 hover:text-white font-medium transition">
+                Зарегистрироваться
+              </Link>
+            </p>
+            <div className="pt-3 border-t border-white/10">
+              <p className="text-xs text-blue-200/50 mb-2">Тестовые аккаунты:</p>
+              <div className="space-y-1 text-xs text-blue-200/70">
+                <p><span className="text-blue-300">Админ:</span> admin@azimovclub.com</p>
+                <p><span className="text-blue-300">Методист:</span> methodist@azimovclub.com</p>
+                <p><span className="text-blue-300">Преподаватель:</span> teacher1@azimovclub.com</p>
+              </div>
             </div>
           </div>
         </div>

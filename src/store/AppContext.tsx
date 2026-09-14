@@ -4,6 +4,7 @@ import { mockUsers, mockCourses, mockAccessRequests, mockAuditLog, mockUserCours
 
 interface AppState {
   currentUser: User | null;
+  users: User[];
   courses: Course[];
   modules: Module[];
   lessons: Lesson[];
@@ -13,6 +14,11 @@ interface AppState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
+  register: (fullName: string, email: string, password: string) => { success: boolean; error?: string };
+  approveUser: (userId: string) => void;
+  rejectUser: (userId: string) => void;
+  revokeAccess: (userId: string, courseId: string) => void;
+  grantAccess: (userId: string, courseId: string) => void;
   hasAccess: (courseId: string) => boolean;
   requestAccess: (courseId: string) => void;
   approveRequest: (requestId: string) => void;
@@ -41,6 +47,7 @@ const AppContext = createContext<AppState | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>(mockUsers);
   const [courses, setCourses] = useState<Course[]>(mockCourses);
   const [modules, setModules] = useState<Module[]>(mockModules);
   const [lessons, setLessons] = useState<Lesson[]>(mockLessons);
@@ -56,17 +63,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ]);
 
   const login = useCallback((email: string, _password: string): boolean => {
-    const user = mockUsers.find(u => u.email === email);
+    const user = users.find(u => u.email === email);
     if (user) {
+      // Проверяем статус пользователя
+      if (user.status === 'pending') {
+        alert('Ваш аккаунт ещё не активирован. Ожидайте подтверждения администратора.');
+        return false;
+      }
+      if (user.status === 'rejected') {
+        alert('Ваша регистрация была отклонена. Обратитесь к администратору.');
+        return false;
+      }
       setCurrentUser(user);
       return true;
     }
     return false;
-  }, []);
+  }, [users]);
 
   const logout = useCallback(() => {
     setCurrentUser(null);
   }, []);
+
+  const register = useCallback((fullName: string, email: string, _password: string): { success: boolean; error?: string } => {
+    // Проверяем, не зарегистрирован ли уже пользователь
+    if (users.some(u => u.email === email)) {
+      return { success: false, error: 'Пользователь с таким email уже зарегистрирован' };
+    }
+
+    // Создаём нового пользователя со статусом "pending"
+    const newUser: User = {
+      id: `u${Date.now()}`,
+      email,
+      fullName,
+      role: 'teacher', // По умолчанию все новые пользователи - преподаватели
+      status: 'pending',
+      registeredAt: new Date().toISOString(),
+    };
+
+    setUsers(prev => [...prev, newUser]);
+    
+    return { success: true };
+  }, [users]);
+
+  const approveUser = useCallback((userId: string) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'active' as const } : u));
+  }, []);
+
+  const rejectUser = useCallback((userId: string) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'rejected' as const } : u));
+  }, []);
+
+  const revokeAccess = useCallback((userId: string, courseId: string) => {
+    setUserCourseAccess(prev => prev.filter(a => !(a.userId === userId && a.courseId === courseId)));
+  }, []);
+
+  const grantAccess = useCallback((userId: string, courseId: string) => {
+    const existing = userCourseAccess.find(a => a.userId === userId && a.courseId === courseId);
+    if (!existing && currentUser) {
+      setUserCourseAccess(prev => [...prev, {
+        userId,
+        courseId,
+        grantedBy: currentUser.id,
+        grantedAt: new Date().toISOString()
+      }]);
+    }
+  }, [userCourseAccess, currentUser]);
 
   const hasAccess = useCallback((courseId: string): boolean => {
     if (!currentUser) return false;
@@ -286,6 +347,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       currentUser,
+      users,
       courses,
       modules,
       lessons,
@@ -295,6 +357,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!currentUser,
       login,
       logout,
+      register,
+      approveUser,
+      rejectUser,
+      revokeAccess,
+      grantAccess,
       hasAccess,
       requestAccess,
       approveRequest,
