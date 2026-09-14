@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './store/AppContext';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import CatalogPage from './pages/CatalogPage';
 import CoursePage from './pages/CoursePage';
 import AdminPage from './pages/AdminPage';
@@ -22,6 +23,10 @@ function AppRoutes() {
       <Route 
         path="/login" 
         element={isAuthenticated ? <Navigate to="/catalog" replace /> : <LoginPage />} 
+      />
+      <Route 
+        path="/register" 
+        element={isAuthenticated ? <Navigate to="/catalog" replace /> : <RegisterPage />} 
       />
       <Route
         element={

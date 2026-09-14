@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { 
   Shield, Users, FileText, Clock, CheckCircle, XCircle, AlertCircle,
-  Eye, ChevronDown, Search, Filter, Activity
+  Eye, ChevronDown, Search, Filter, Activity, UserCheck, UserX
 } from 'lucide-react';
 
-type TabType = 'requests' | 'access' | 'audit';
+type TabType = 'requests' | 'access' | 'users' | 'audit';
 
 export default function AdminPage() {
-  const { accessRequests, approveRequest, rejectRequest, auditLog, currentUser, courses, userCourseAccess, modules } = useApp();
+  const { accessRequests, approveRequest, rejectRequest, auditLog, currentUser, courses, userCourseAccess, modules, users, approveUser, rejectUser } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('requests');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -26,11 +26,20 @@ export default function AdminPage() {
   }
 
   const pendingRequests = accessRequests.filter(r => r.status === 'PENDING');
+  const pendingUsers = users.filter(u => u.status === 'pending');
   const filteredRequests = accessRequests.filter(r => {
     if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return r.userName.toLowerCase().includes(q) || r.courseTitle.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const filteredUsers = users.filter(u => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
     }
     return true;
   });
@@ -46,8 +55,9 @@ export default function AdminPage() {
   });
 
   const tabs = [
+    { id: 'users' as TabType, label: 'Пользователи', icon: Users, count: pendingUsers.length },
     { id: 'requests' as TabType, label: 'Заявки на доступ', icon: AlertCircle, count: pendingRequests.length },
-    { id: 'access' as TabType, label: 'Права доступа', icon: Users },
+    { id: 'access' as TabType, label: 'Права доступа', icon: Shield },
     { id: 'audit' as TabType, label: 'Журнал аудита', icon: Activity },
   ];
 
@@ -162,6 +172,70 @@ export default function AdminPage() {
 
         {/* Tab content */}
         <div className="divide-y divide-slate-100">
+          {activeTab === 'users' && (
+            <>
+              {filteredUsers.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                  <p>Нет пользователей</p>
+                </div>
+              ) : (
+                filteredUsers.map(user => (
+                  <div key={user.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                      user.status === 'active' ? 'bg-emerald-50' :
+                      user.status === 'pending' ? 'bg-amber-50' : 'bg-red-50'
+                    }`}>
+                      {user.status === 'active' && <UserCheck className="w-5 h-5 text-emerald-600" />}
+                      {user.status === 'pending' && <Clock className="w-5 h-5 text-amber-600" />}
+                      {user.status === 'rejected' && <UserX className="w-5 h-5 text-red-600" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900">{user.fullName}</p>
+                      <p className="text-xs text-slate-500">{user.email}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Роль: <span className="font-medium">
+                          {user.role === 'superadmin' ? 'Администратор' : 
+                           user.role === 'methodist' ? 'Методист' : 'Преподаватель'}
+                        </span>
+                        {' • '}
+                        Регистрация: {new Date(user.registeredAt).toLocaleString('ru-RU')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {user.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => approveUser(user.id)}
+                            className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-medium rounded-lg hover:bg-emerald-600 transition"
+                          >
+                            Одобрить
+                          </button>
+                          <button
+                            onClick={() => rejectUser(user.id)}
+                            className="px-3 py-1.5 border border-slate-200 text-slate-600 text-xs font-medium rounded-lg hover:bg-slate-100 transition"
+                          >
+                            Отклонить
+                          </button>
+                        </>
+                      )}
+                      {user.status === 'active' && (
+                        <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded">
+                          Активен
+                        </span>
+                      )}
+                      {user.status === 'rejected' && (
+                        <span className="px-2 py-1 bg-red-50 text-red-700 text-xs font-medium rounded">
+                          Отклонён
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </>
+          )}
+
           {activeTab === 'requests' && (
             <>
               {filteredRequests.length === 0 ? (

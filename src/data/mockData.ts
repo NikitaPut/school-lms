@@ -1,11 +1,11 @@
 import { Course, Module, Lesson, User, AccessRequest, AuditLogEntry } from '../types';
 
 export const mockUsers: User[] = [
-  { id: 'u1', email: 'admin@azimovclub.com', fullName: 'Иванов Алексей', role: 'superadmin' },
-  { id: 'u2', email: 'methodist@azimovclub.com', fullName: 'Петрова Мария', role: 'methodist' },
-  { id: 'u3', email: 'teacher1@azimovclub.com', fullName: 'Сидорова Елена', role: 'teacher' },
-  { id: 'u4', email: 'teacher2@azimovclub.com', fullName: 'Козлов Дмитрий', role: 'teacher' },
-  { id: 'u5', email: 'teacher3@azimovclub.com', fullName: 'Новикова Анна', role: 'teacher' },
+  { id: 'u1', email: 'admin@azimovclub.com', fullName: 'Иванов Алексей', role: 'superadmin', status: 'active', registeredAt: '2026-01-15T10:00:00Z' },
+  { id: 'u2', email: 'methodist@azimovclub.com', fullName: 'Петрова Мария', role: 'methodist', status: 'active', registeredAt: '2026-02-01T14:30:00Z' },
+  { id: 'u3', email: 'teacher1@azimovclub.com', fullName: 'Сидорова Елена', role: 'teacher', status: 'active', registeredAt: '2026-03-10T09:15:00Z' },
+  { id: 'u4', email: 'teacher2@azimovclub.com', fullName: 'Козлов Дмитрий', role: 'teacher', status: 'active', registeredAt: '2026-04-05T11:20:00Z' },
+  { id: 'u5', email: 'teacher3@azimovclub.com', fullName: 'Новикова Анна', role: 'teacher', status: 'active', registeredAt: '2026-05-20T16:45:00Z' },
 ];
 
 export const mockCourses: Course[] = [

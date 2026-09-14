@@ -1,4 +1,5 @@
 export type UserRole = 'superadmin' | 'methodist' | 'teacher';
+export type UserStatus = 'active' | 'pending' | 'rejected';
 
 export interface User {
   id: string;
@@ -6,6 +7,8 @@ export interface User {
   fullName: string;
   role: UserRole;
   avatar?: string;
+  status: UserStatus;
+  registeredAt: string;
 }
 
 export interface Course {
