@@ -145,8 +145,8 @@ export const mockLessons: Lesson[] = [
     id: 'l1', moduleId: 'm1', title: 'Знакомство с mBlock и интерфейсом среды', orderIndex: 1,
     content: '<h2>Что такое mBlock?</h2><p>mBlock — это визуальная среда программирования на основе Scratch 3.0, адаптированная для работы с роботами Makeblock. Она позволяет создавать программы из блоков, не написав ни строчки кода.</p><h3>Установка mBlock</h3><p>Скачайте последнюю версию с официального сайта <strong>mblock.cc</strong>. Программа работает на Windows, macOS и Linux.</p><h3>Интерфейс программы</h3><p>Основные элементы интерфейса:</p><ul><li><strong>Сцена</strong> — область, где работает ваш робот</li><li><strong>Палитра блоков</strong> — все доступные команды</li><li><strong>Область скриптов</strong> — здесь собираете программу</li><li><strong>Спрайты</strong> — объекты, которыми управляете</li></ul>',
     materials: [
-      { id: 'mat1', lessonId: 'l1', type: 'link', title: 'Скачать mBlock', content: 'https://www.mblock.cc', orderIndex: 1 },
-      { id: 'mat2', lessonId: 'l1', type: 'pdf', title: 'Инструкция по установке', content: '', orderIndex: 2 },
+      { id: 'mat1', lessonId: 'l1', type: 'link', title: 'Скачать mBlock', content: 'https://www.mblock.cc', orderIndex: 1, downloadable: true },
+      { id: 'mat2', lessonId: 'l1', type: 'pdf', title: 'Инструкция по установке', content: '', orderIndex: 2, downloadable: false },
     ]
   },
   {
@@ -175,7 +175,7 @@ export const mockLessons: Lesson[] = [
     id: 'l6', moduleId: 'm7', title: 'Установка Python и настройка среды', orderIndex: 1,
     content: '<h2>Установка Python</h2><p>Для начала работы нам необходимо установить интерпретатор Python на ваш компьютер. Перейдите на официальный сайт <strong>python.org</strong> и скачайте последнюю стабильную версию.</p><h3>Шаг 1: Скачивание</h3><p>Выберите версию для вашей операционной системы.</p><h3>Шаг 2: Установка</h3><p>При установке обязательно отметьте галочку "Add Python to PATH".</p><h3>Шаг 3: Проверка</h3><p>Откройте терминал и выполните команду <code>python --version</code>.</p>',
     materials: [
-      { id: 'mat3', lessonId: 'l6', type: 'link', title: 'Официальный сайт Python', content: 'https://python.org', orderIndex: 1 },
+      { id: 'mat3', lessonId: 'l6', type: 'link', title: 'Официальный сайт Python', content: 'https://python.org', orderIndex: 1, downloadable: false },
     ]
   },
   {
@@ -193,7 +193,7 @@ export const mockLessons: Lesson[] = [
     id: 'l9', moduleId: 'm13', title: 'Знакомство с Unity Engine', orderIndex: 1,
     content: '<h2>Что такое Unity?</h2><p>Unity — это кроссплатформенный игровой движок, позволяющий создавать 2D и 3D игры для различных платформ: PC, мобильные устройства, консоли, VR/AR.</p><h3>Установка Unity Hub</h3><p>Скачайте Unity Hub с официального сайта <strong>unity.com</strong>. Через Hub вы будете управлять версиями Unity и проектами.</p><h3>Интерфейс Unity</h3><p>Основные окна:</p><ul><li><strong>Scene</strong> — 3D-вид вашей сцены</li><li><strong>Game</strong> — вид от камеры (как будет выглядеть игра)</li><li><strong>Hierarchy</strong> — список всех объектов в сцене</li><li><strong>Inspector</strong> — свойства выбранного объекта</li><li><strong>Project</strong> — файлы вашего проекта</li></ul>',
     materials: [
-      { id: 'mat4', lessonId: 'l9', type: 'link', title: 'Скачать Unity', content: 'https://unity.com/download', orderIndex: 1 },
+      { id: 'mat4', lessonId: 'l9', type: 'link', title: 'Скачать Unity', content: 'https://unity.com/download', orderIndex: 1, downloadable: true },
     ]
   },
   {

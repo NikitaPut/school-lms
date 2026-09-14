@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../store/AppContext';
+import mammoth from 'mammoth';
 import { 
   Plus, Trash2, Edit3, Save, X, ChevronDown, ChevronRight, 
   BookOpen, FileText, Link2, Play, Upload, ArrowLeft, FolderPlus, 
-  FilePlus, CheckCircle, AlertCircle, GripVertical
+  FilePlus, CheckCircle, AlertCircle, GripVertical, Download, Lock, Unlock, FileUp
 } from 'lucide-react';
 
 type ViewType = 'courses' | 'course-detail' | 'lesson-editor';
 
 export default function ManageCoursesPage() {
-  const { currentUser, courses, addCourse, deleteCourse, addModule, deleteModule, addLesson, updateLesson, deleteLesson, addMaterial, deleteMaterial, modules, lessons } = useApp();
+  const { currentUser, courses, addCourse, deleteCourse, addModule, deleteModule, addLesson, updateLesson, deleteLesson, addMaterial, updateMaterial, deleteMaterial, modules, lessons } = useApp();
   
   const [view, setView] = useState<ViewType>('courses');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -30,7 +31,9 @@ export default function ManageCoursesPage() {
   
   // Material form
   const [showMaterialForm, setShowMaterialForm] = useState(false);
-  const [materialForm, setMaterialForm] = useState({ title: '', type: 'text' as 'text' | 'pdf' | 'video' | 'link', content: '' });
+  const [materialForm, setMaterialForm] = useState({ title: '', type: 'text' as 'text' | 'pdf' | 'video' | 'link', content: '', downloadable: false });
+  const [importingDocx, setImportingDocx] = useState(false);
+  const docxInputRef = useRef<HTMLInputElement>(null);
 
   if (!currentUser || (currentUser.role !== 'superadmin' && currentUser.role !== 'methodist')) {
     return (
@@ -69,9 +72,29 @@ export default function ManageCoursesPage() {
 
   const handleCreateMaterial = () => {
     if (!materialForm.title.trim() || !selectedLessonId) return;
-    addMaterial(selectedLessonId, materialForm.type, materialForm.title, materialForm.content);
-    setMaterialForm({ title: '', type: 'text', content: '' });
+    addMaterial(selectedLessonId, materialForm.type, materialForm.title, materialForm.content, materialForm.downloadable);
+    setMaterialForm({ title: '', type: 'text', content: '', downloadable: false });
     setShowMaterialForm(false);
+  };
+
+  // DOCX Import
+  const handleDocxImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportingDocx(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      setLessonForm({ ...lessonForm, content: result.value });
+      if (!lessonForm.title) {
+        setLessonForm(prev => ({ ...prev, title: file.name.replace(/\.docx$/i, '') }));
+      }
+    } catch (err) {
+      alert('Ошибка при импорте DOCX файла');
+    } finally {
+      setImportingDocx(false);
+      if (docxInputRef.current) docxInputRef.current.value = '';
+    }
   };
 
   const colors = [
@@ -353,15 +376,40 @@ export default function ManageCoursesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Содержание урока (HTML)</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Содержание урока</label>
+                  
+                  {/* DOCX Import Button */}
+                  <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <FileUp className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">Импорт из DOCX</p>
+                          <p className="text-xs text-slate-500">Загрузите Word-документ — содержимое автоматически конвертируется в HTML</p>
+                        </div>
+                      </div>
+                      <label className={`px-3 py-1.5 bg-white border border-blue-300 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-50 transition cursor-pointer flex items-center gap-1.5 ${importingDocx ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <Upload className="w-3.5 h-3.5" />
+                        {importingDocx ? 'Импорт...' : 'Выбрать файл'}
+                        <input
+                          ref={docxInputRef}
+                          type="file"
+                          accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                          onChange={handleDocxImport}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  
                   <textarea
                     value={lessonForm.content}
                     onChange={e => setLessonForm({ ...lessonForm, content: e.target.value })}
                     placeholder="<h2>Заголовок</h2><p>Текст урока...</p>"
-                    rows={6}
+                    rows={8}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none font-mono text-sm"
                   />
-                  <p className="text-xs text-slate-500 mt-1">Поддерживается HTML: h2, h3, p, ul, li, pre, code, strong</p>
+                  <p className="text-xs text-slate-500 mt-1">HTML-разметка: h2, h3, p, ul, li, pre, code, strong. Или импортируйте из DOCX выше.</p>
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
@@ -414,11 +462,49 @@ export default function ManageCoursesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">HTML-содержание</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Содержание урока</label>
+                
+                {/* DOCX Import for existing lesson */}
+                <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <FileUp className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Импорт из DOCX</p>
+                        <p className="text-xs text-slate-500">Заменит текущее содержимое</p>
+                      </div>
+                    </div>
+                    <label className={`px-3 py-1.5 bg-white border border-blue-300 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-50 transition cursor-pointer flex items-center gap-1.5 ${importingDocx ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <Upload className="w-3.5 h-3.5" />
+                      {importingDocx ? 'Импорт...' : 'Выбрать файл'}
+                      <input
+                        type="file"
+                        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setImportingDocx(true);
+                          try {
+                            const arrayBuffer = await file.arrayBuffer();
+                            const result = await mammoth.convertToHtml({ arrayBuffer });
+                            updateLesson(selectedLesson.id, { content: result.value });
+                          } catch (err) {
+                            alert('Ошибка при импорте DOCX');
+                          } finally {
+                            setImportingDocx(false);
+                            e.target.value = '';
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+                
                 <textarea
                   value={selectedLesson.content}
                   onChange={e => updateLesson(selectedLesson.id, { content: e.target.value })}
-                  rows={12}
+                  rows={10}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none font-mono text-sm"
                 />
               </div>
@@ -463,8 +549,23 @@ export default function ManageCoursesPage() {
                     {mat.type === 'text' && <FileText className="w-5 h-5 text-slate-500" />}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-700 truncate">{mat.title}</p>
-                      <p className="text-xs text-slate-500">{mat.type === 'pdf' ? 'PDF документ' : mat.type === 'video' ? 'Видео' : mat.type === 'link' ? 'Ссылка' : 'Текст'}</p>
+                      <p className="text-xs text-slate-500">
+                        {mat.type === 'pdf' ? 'PDF документ' : mat.type === 'video' ? 'Видео' : mat.type === 'link' ? 'Ссылка' : 'Текст'}
+                      </p>
                     </div>
+                    {/* Downloadable toggle */}
+                    <button
+                      onClick={() => updateMaterial(mat.id, { downloadable: !mat.downloadable })}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${
+                        mat.downloadable 
+                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' 
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                      title={mat.downloadable ? 'Скачивание разрешено' : 'Только просмотр'}
+                    >
+                      {mat.downloadable ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                      {mat.downloadable ? 'Открыт' : 'Закрыт'}
+                    </button>
                     <button
                       onClick={() => deleteMaterial(mat.id)}
                       className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
@@ -545,6 +646,44 @@ export default function ManageCoursesPage() {
                     />
                   )}
                 </div>
+
+                {/* Downloadable toggle */}
+                {(materialForm.type === 'pdf' || materialForm.type === 'video' || materialForm.type === 'text') && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={materialForm.downloadable}
+                          onChange={e => setMaterialForm({ ...materialForm, downloadable: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-300 peer-checked:bg-emerald-500 rounded-full transition-colors" />
+                        <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-900 flex items-center gap-1.5">
+                          {materialForm.downloadable ? (
+                            <>
+                              <Unlock className="w-4 h-4 text-emerald-600" />
+                              Разрешить скачивание
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-4 h-4 text-slate-500" />
+                              Только просмотр
+                            </>
+                          )}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {materialForm.downloadable 
+                            ? 'Ученики смогут скачать этот файл на своё устройство' 
+                            : 'Файл можно только просматривать, скачивание запрещено'}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                )}
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setShowMaterialForm(false)} className="flex-1 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition">

@@ -32,7 +32,8 @@ interface AppState {
   updateLesson: (lessonId: string, updates: Partial<Lesson>) => void;
   deleteLesson: (lessonId: string) => void;
   // Material CRUD
-  addMaterial: (lessonId: string, type: Material['type'], title: string, content: string) => void;
+  addMaterial: (lessonId: string, type: Material['type'], title: string, content: string, downloadable?: boolean) => void;
+  updateMaterial: (materialId: string, updates: Partial<Material>) => void;
   deleteMaterial: (materialId: string) => void;
 }
 
@@ -249,7 +250,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [lessons, modules, addAuditEntry]);
 
   // === MATERIAL CRUD ===
-  const addMaterial = useCallback((lessonId: string, type: Material['type'], title: string, content: string) => {
+  const addMaterial = useCallback((lessonId: string, type: Material['type'], title: string, content: string, downloadable: boolean = false) => {
     const lesson = lessons.find(l => l.id === lessonId);
     if (!lesson) return;
     const newMaterial: Material = {
@@ -259,12 +260,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       title,
       content,
       orderIndex: lesson.materials.length + 1,
+      downloadable,
     };
     setLessons(prev => prev.map(l => 
       l.id === lessonId ? { ...l, materials: [...l.materials, newMaterial] } : l
     ));
     addAuditEntry('ADD_MATERIAL', 'material', newMaterial.id);
   }, [lessons, addAuditEntry]);
+
+  const updateMaterial = useCallback((materialId: string, updates: Partial<Material>) => {
+    setLessons(prev => prev.map(l => ({
+      ...l,
+      materials: l.materials.map(m => m.id === materialId ? { ...m, ...updates } : m),
+    })));
+  }, []);
 
   const deleteMaterial = useCallback((materialId: string) => {
     setLessons(prev => prev.map(l => ({
@@ -302,6 +311,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateLesson,
       deleteLesson,
       addMaterial,
+      updateMaterial,
       deleteMaterial,
     }}>
       {children}

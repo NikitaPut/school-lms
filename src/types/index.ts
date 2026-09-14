@@ -45,6 +45,7 @@ export interface Material {
   content: string;
   fileUrl?: string;
   orderIndex: number;
+  downloadable: boolean;
 }
 
 export interface AccessRequest {

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { 
   ArrowLeft, BookOpen, CheckCircle, Circle, ChevronDown, ChevronRight, 
-  FileText, Link2, Play, Shield, Eye, AlertTriangle, Clock
+  FileText, Link2, Play, Shield, Eye, AlertTriangle, Clock, Download
 } from 'lucide-react';
 
 export default function CoursePage() {
@@ -246,15 +246,31 @@ export default function CoursePage() {
                         <div className="flex-1">
                           <p className="text-sm font-medium text-slate-700">{mat.title}</p>
                           <p className="text-xs text-slate-500">
-                            {mat.type === 'pdf' ? 'PDF документ • Presigned URL (60 сек)' : 
-                             mat.type === 'video' ? 'Видео • Защищённый стриминг' :
+                            {mat.type === 'pdf' ? 'PDF документ' : 
+                             mat.type === 'video' ? 'Видео' :
                              mat.type === 'link' ? 'Внешняя ссылка' : 'Текстовый материал'}
                           </p>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Shield className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-xs text-amber-600">Защищено</span>
-                        </div>
+                        {mat.downloadable ? (
+                          <button 
+                            onClick={() => {
+                              if (mat.content && mat.content.startsWith('http')) {
+                                window.open(mat.content, '_blank');
+                              } else {
+                                alert('Скачивание файла: ' + mat.title + '\n\nВ продакшен-версии здесь будет presigned URL с TTL 60 секунд.');
+                              }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white text-xs font-medium rounded-lg hover:bg-emerald-600 transition"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Скачать
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+                            <Shield className="w-3.5 h-3.5 text-amber-600" />
+                            <span className="text-xs text-amber-700 font-medium">Только просмотр</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
