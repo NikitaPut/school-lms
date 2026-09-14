@@ -9,6 +9,15 @@ export default function CatalogPage() {
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [requestSent, setRequestSent] = useState<Set<string>>(new Set());
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<'all' | 'main' | 'olymp'>('all');
+
+  // Разделение курсов на категории
+  const mainCourses = courses.filter(c => !c.title.startsWith('Олимпиадная'));
+  const olympCourses = courses.filter(c => c.title.startsWith('Олимпиадная'));
+  
+  const filteredCourses = activeCategory === 'main' ? mainCourses 
+    : activeCategory === 'olymp' ? olympCourses 
+    : courses;
 
   const handleCourseClick = (courseId: string) => {
     if (hasAccess(courseId)) {
@@ -39,6 +48,40 @@ export default function CatalogPage() {
         </p>
       </div>
 
+      {/* Category tabs */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setActiveCategory('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            activeCategory === 'all'
+              ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          Все курсы ({courses.length})
+        </button>
+        <button
+          onClick={() => setActiveCategory('main')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            activeCategory === 'main'
+              ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          Основные ({mainCourses.length})
+        </button>
+        <button
+          onClick={() => setActiveCategory('olymp')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            activeCategory === 'olymp'
+              ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          Олимпиадные ({olympCourses.length})
+        </button>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
@@ -46,8 +89,8 @@ export default function CatalogPage() {
             <BookOpen className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900">{courses.length}</p>
-            <p className="text-sm text-slate-500">Всего курсов</p>
+            <p className="text-2xl font-bold text-slate-900">{filteredCourses.length}</p>
+            <p className="text-sm text-slate-500">Курсов в категории</p>
           </div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
@@ -55,7 +98,7 @@ export default function CatalogPage() {
             <Unlock className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900">{courses.filter(c => hasAccess(c.id)).length}</p>
+            <p className="text-2xl font-bold text-slate-900">{filteredCourses.filter(c => hasAccess(c.id)).length}</p>
             <p className="text-sm text-slate-500">Доступно вам</p>
           </div>
         </div>
@@ -64,7 +107,7 @@ export default function CatalogPage() {
             <Clock className="w-5 h-5 text-amber-600" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900">{courses.filter(c => !hasAccess(c.id)).length}</p>
+            <p className="text-2xl font-bold text-slate-900">{filteredCourses.filter(c => !hasAccess(c.id)).length}</p>
             <p className="text-sm text-slate-500">Закрыты</p>
           </div>
         </div>
@@ -72,7 +115,7 @@ export default function CatalogPage() {
 
       {/* Course Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map(course => {
+        {filteredCourses.map(course => {
           const accessible = hasAccess(course.id);
           const progress = getProgress(course.id);
           const alreadyRequested = requestSent.has(course.id);
@@ -118,7 +161,7 @@ export default function CatalogPage() {
                 <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
                   <span className="flex items-center gap-1">
                     <BookOpen className="w-3.5 h-3.5" />
-                    {course.moduleCount} модулей
+                    {course.moduleCount} {course.moduleCount === 3 ? 'года обучения' : 'модуля'}
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5" />

@@ -32,6 +32,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [completedLessons, setCompletedLessons] = useState<{ userId: string; lessonId: string }[]>([
     { userId: 'u3', lessonId: 'l1' },
     { userId: 'u3', lessonId: 'l2' },
+    { userId: 'u3', lessonId: 'l3' },
+    { userId: 'u4', lessonId: 'l6' },
+    { userId: 'u4', lessonId: 'l7' },
   ]);
 
   const login = useCallback((email: string, _password: string): boolean => {
@@ -116,8 +119,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getProgress = useCallback((courseId: string): number => {
     if (!currentUser) return 0;
-    // Simple mock: count completed lessons for this course
-    const courseLessons = ['l1', 'l2', 'l3', 'l4', 'l5']; // mock lesson IDs per course
+    // Подсчитываем прогресс по курсу на основе завершённых уроков
+    // Для прототипа используем упрощённую логику
+    const courseLessonsMap: { [key: string]: string[] } = {
+      'c1': ['l1', 'l2', 'l3', 'l4', 'l5'], // Робототехника
+      'c2': [], // Пайка
+      'c3': ['l6', 'l7', 'l8'], // Python
+      'c4': ['l11', 'l12'], // Minecraft
+      'c5': ['l9', 'l10'], // Unity
+      'c6': [], // Олимпиада Робототехника
+      'c7': [], // Олимпиада Программирование
+      'c8': [], // Олимпиада GameDev
+    };
+    
+    const courseLessons = courseLessonsMap[courseId] || [];
+    if (courseLessons.length === 0) return 0;
+    
     const completed = completedLessons.filter(cl => 
       cl.userId === currentUser.id && courseLessons.includes(cl.lessonId)
     );
