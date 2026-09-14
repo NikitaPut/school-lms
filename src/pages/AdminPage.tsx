@@ -8,7 +8,7 @@ import {
 type TabType = 'requests' | 'access' | 'audit';
 
 export default function AdminPage() {
-  const { accessRequests, approveRequest, rejectRequest, auditLog, currentUser, courses, userCourseAccess } = useApp();
+  const { accessRequests, approveRequest, rejectRequest, auditLog, currentUser, courses, userCourseAccess, modules } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('requests');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
-import { BookOpen, LayoutGrid, Shield, LogOut, User, Bell } from 'lucide-react';
+import { LayoutGrid, Shield, LogOut, User, Bell, Plus } from 'lucide-react';
+import AzimovLogo from './AzimovLogo';
 
 export default function Layout() {
   const { currentUser, logout, accessRequests } = useApp();
@@ -18,7 +19,10 @@ export default function Layout() {
   const navItems = [
     { path: '/catalog', label: 'Каталог курсов', icon: LayoutGrid },
     ...(currentUser?.role === 'superadmin' || currentUser?.role === 'methodist' 
-      ? [{ path: '/admin', label: 'Управление', icon: Shield }] 
+      ? [
+          { path: '/courses/manage', label: 'Управление курсами', icon: Plus },
+          { path: '/admin', label: 'Администрирование', icon: Shield },
+        ] 
       : []),
   ];
 
@@ -30,10 +34,7 @@ export default function Layout() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-8">
               <Link to="/catalog" className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                  <BookOpen className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-bold text-lg text-slate-900">EduVault</span>
+                <AzimovLogo size="sm" />
               </Link>
               
               <nav className="hidden md:flex items-center gap-1">
@@ -68,14 +69,14 @@ export default function Layout() {
               )}
               
               <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium text-slate-900 leading-tight">{currentUser?.fullName}</p>
                   <p className="text-xs text-slate-500">
                     {currentUser?.role === 'superadmin' ? 'Администратор' : 
-                     currentUser?.role === 'methodist' ? 'Методист' : 'Учитель'}
+                     currentUser?.role === 'methodist' ? 'Методист' : 'Преподаватель'}
                   </p>
                 </div>
                 <button
@@ -113,6 +114,17 @@ export default function Layout() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-200 bg-white mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <AzimovLogo size="sm" showText={false} />
+            <span>© 2026 Школа робототехники «Азимов»</span>
+          </div>
+          <span className="text-xs text-slate-400">Внутренняя платформа обучения</span>
+        </div>
+      </footer>
     </div>
   );
 }

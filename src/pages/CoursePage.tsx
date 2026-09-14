@@ -1,31 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
-import { mockModules, mockLessons } from '../data/mockData';
 import { 
   ArrowLeft, BookOpen, CheckCircle, Circle, ChevronDown, ChevronRight, 
-  FileText, Link2, Play, Shield, Eye, AlertTriangle, Clock
+  FileText, Link2, Play, Shield, Eye, AlertTriangle, Clock, Download
 } from 'lucide-react';
 
 export default function CoursePage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { courses, hasAccess, currentUser, markLessonComplete, completedLessons, addAuditEntry } = useApp();
+  const { courses, modules, lessons, hasAccess, currentUser, markLessonComplete, completedLessons, addAuditEntry } = useApp();
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
   const [showWatermark, setShowWatermark] = useState(true);
 
   const course = courses.find(c => c.id === courseId);
-  const modules = mockModules.filter(m => m.courseId === courseId).sort((a, b) => a.orderIndex - b.orderIndex);
-  const lessons = mockLessons.filter(l => modules.some(m => m.id === l.moduleId));
-  const currentLesson = lessons.find(l => l.id === activeLesson);
+  const courseModules = modules.filter(m => m.courseId === courseId).sort((a, b) => a.orderIndex - b.orderIndex);
+  const courseLessons = lessons.filter(l => courseModules.some(m => m.id === l.moduleId));
+  const currentLesson = courseLessons.find(l => l.id === activeLesson);
 
   useEffect(() => {
     if (courseId && hasAccess(courseId)) {
       addAuditEntry('ENTER_COURSE', 'course', courseId);
     }
-    if (modules.length > 0 && !expandedModule) {
-      setExpandedModule(modules[0].id);
+    if (courseModules.length > 0 && !expandedModule) {
+      setExpandedModule(courseModules[0].id);
     }
   }, [courseId]);
 
@@ -72,19 +71,27 @@ export default function CoursePage() {
     markLessonComplete(lessonId);
   };
 
-  const totalLessons = lessons.length;
-  const completedCount = lessons.filter(l => isLessonCompleted(l.id)).length;
+  const totalLessons = courseLessons.length;
+  const completedCount = courseLessons.filter(l => isLessonCompleted(l.id)).length;
   const progress = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   return (
     <div className="relative">
       {/* Watermark overlay */}
       {showWatermark && currentUser && (
-        <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden opacity-[0.04]">
+        <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden opacity-[0.05]">
           <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-32 rotate-[-15deg] scale-150">
             {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} className="text-slate-900 text-sm font-medium whitespace-nowrap">
-                {currentUser.fullName} • {currentUser.email} • {new Date().toLocaleDateString('ru-RU')}
+              <div key={i} className="flex flex-col items-center gap-1">
+                <div className="text-blue-900 text-base font-bold whitespace-nowrap">
+                  АЗИМОВ • azimovclub.com
+                </div>
+                <div className="text-slate-900 text-sm font-medium whitespace-nowrap">
+                  {currentUser.fullName} • {currentUser.email}
+                </div>
+                <div className="text-slate-700 text-xs whitespace-nowrap">
+                  {new Date().toLocaleDateString('ru-RU')}
+                </div>
               </div>
             ))}
           </div>
@@ -92,18 +99,18 @@ export default function CoursePage() {
       )}
 
       {/* DRM Notice */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 flex items-start gap-3">
+        <AlertTriangle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-sm text-amber-800 font-medium">Защищённый контент</p>
-          <p className="text-xs text-amber-700 mt-0.5">
-            Материалы курса защищены от копирования. Все действия записываются в журнал аудита. 
-            На каждом документе отображается персональный водяной знак.
+          <p className="text-sm text-blue-800 font-medium">Защищённый контент школы «Азимов»</p>
+          <p className="text-xs text-blue-700 mt-0.5">
+            Материалы курса являются собственностью школы «Азимов» и защищены от копирования. 
+            Все действия записываются в журнал аудита. На каждом документе отображается персональный водяной знак.
           </p>
         </div>
         <button 
           onClick={() => setShowWatermark(!showWatermark)}
-          className="text-xs text-amber-700 hover:text-amber-900 underline shrink-0"
+          className="text-xs text-blue-700 hover:text-blue-900 underline shrink-0"
         >
           {showWatermark ? 'Скрыть WM' : 'Показать WM'}
         </button>
@@ -142,8 +149,8 @@ export default function CoursePage() {
               </h2>
             </div>
             <div className="divide-y divide-slate-100">
-              {modules.map(module => {
-                const moduleLessons = lessons.filter(l => l.moduleId === module.id).sort((a, b) => a.orderIndex - b.orderIndex);
+              {courseModules.map(module => {
+                const moduleLessons = courseLessons.filter(l => l.moduleId === module.id).sort((a, b) => a.orderIndex - b.orderIndex);
                 const isExpanded = expandedModule === module.id;
                 const moduleCompleted = moduleLessons.filter(l => isLessonCompleted(l.id)).length;
 
@@ -239,15 +246,31 @@ export default function CoursePage() {
                         <div className="flex-1">
                           <p className="text-sm font-medium text-slate-700">{mat.title}</p>
                           <p className="text-xs text-slate-500">
-                            {mat.type === 'pdf' ? 'PDF документ • Presigned URL (60 сек)' : 
-                             mat.type === 'video' ? 'Видео • Защищённый стриминг' :
+                            {mat.type === 'pdf' ? 'PDF документ' : 
+                             mat.type === 'video' ? 'Видео' :
                              mat.type === 'link' ? 'Внешняя ссылка' : 'Текстовый материал'}
                           </p>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Shield className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-xs text-amber-600">Защищено</span>
-                        </div>
+                        {mat.downloadable ? (
+                          <button 
+                            onClick={() => {
+                              if (mat.content && mat.content.startsWith('http')) {
+                                window.open(mat.content, '_blank');
+                              } else {
+                                alert('Скачивание файла: ' + mat.title + '\n\nВ продакшен-версии здесь будет presigned URL с TTL 60 секунд.');
+                              }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white text-xs font-medium rounded-lg hover:bg-emerald-600 transition"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Скачать
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+                            <Shield className="w-3.5 h-3.5 text-amber-600" />
+                            <span className="text-xs text-amber-700 font-medium">Только просмотр</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
