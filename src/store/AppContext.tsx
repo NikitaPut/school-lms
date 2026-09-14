@@ -17,6 +17,7 @@ interface AppState {
   register: (fullName: string, email: string, password: string) => { success: boolean; error?: string };
   approveUser: (userId: string) => void;
   rejectUser: (userId: string) => void;
+  revokeAccess: (userId: string, courseId: string) => void;
   hasAccess: (courseId: string) => boolean;
   requestAccess: (courseId: string) => void;
   approveRequest: (requestId: string) => void;
@@ -109,6 +110,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const rejectUser = useCallback((userId: string) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'rejected' as const } : u));
+  }, []);
+
+  const revokeAccess = useCallback((userId: string, courseId: string) => {
+    setUserCourseAccess(prev => prev.filter(a => !(a.userId === userId && a.courseId === courseId)));
   }, []);
 
   const hasAccess = useCallback((courseId: string): boolean => {
@@ -342,6 +347,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       register,
       approveUser,
       rejectUser,
+      revokeAccess,
       hasAccess,
       requestAccess,
       approveRequest,

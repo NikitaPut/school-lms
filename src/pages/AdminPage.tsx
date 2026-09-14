@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { 
   Shield, Users, FileText, Clock, CheckCircle, XCircle, AlertCircle,
-  Eye, ChevronDown, Search, Filter, Activity, UserCheck, UserX
+  Eye, ChevronDown, ChevronRight, Search, Filter, Activity, UserCheck, 
+  UserX, BookOpen, Trash2
 } from 'lucide-react';
 
-type TabType = 'requests' | 'access' | 'users' | 'audit';
+type TabType = 'requests' | 'users' | 'audit';
 
 export default function AdminPage() {
-  const { accessRequests, approveRequest, rejectRequest, auditLog, currentUser, courses, userCourseAccess, modules, users, approveUser, rejectUser } = useApp();
-  const [activeTab, setActiveTab] = useState<TabType>('requests');
+  const { accessRequests, approveRequest, rejectRequest, auditLog, currentUser, courses, userCourseAccess, modules, users, approveUser, rejectUser, revokeAccess } = useApp();
+  const [activeTab, setActiveTab] = useState<TabType>('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
   if (!currentUser || (currentUser.role !== 'superadmin' && currentUser.role !== 'methodist')) {
     return (
@@ -25,8 +27,16 @@ export default function AdminPage() {
     );
   }
 
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setExpandedUser(null);
+  };
+
   const pendingRequests = accessRequests.filter(r => r.status === 'PENDING');
   const pendingUsers = users.filter(u => u.status === 'pending');
+  
   const filteredRequests = accessRequests.filter(r => {
     if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
     if (searchQuery) {
@@ -57,7 +67,6 @@ export default function AdminPage() {
   const tabs = [
     { id: 'users' as TabType, label: 'Пользователи', icon: Users, count: pendingUsers.length },
     { id: 'requests' as TabType, label: 'Заявки на доступ', icon: AlertCircle, count: pendingRequests.length },
-    { id: 'access' as TabType, label: 'Права доступа', icon: Shield },
     { id: 'audit' as TabType, label: 'Журнал аудита', icon: Activity },
   ];
 
@@ -65,18 +74,29 @@ export default function AdminPage() {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Панель управления</h1>
-        <p className="text-slate-500">Управление доступами, заявками и аудит действий пользователей</p>
+        <p className="text-slate-500">Управление пользователями, заявками и аудит действий</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Users className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{users.filter(u => u.status === 'active').length}</p>
+              <p className="text-xs text-slate-500">Активных пользователей</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
               <Clock className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{pendingRequests.length}</p>
+              <p className="text-2xl font-bold text-slate-900">{pendingUsers.length}</p>
               <p className="text-xs text-slate-500">Ожидают одобрения</p>
             </div>
           </div>
@@ -89,17 +109,6 @@ export default function AdminPage() {
             <div>
               <p className="text-2xl font-bold text-slate-900">{userCourseAccess.length}</p>
               <p className="text-xs text-slate-500">Активных доступов</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-900">{courses.length}</p>
-              <p className="text-xs text-slate-500">Курсов в системе</p>
             </div>
           </div>
         </div>
@@ -123,7 +132,7 @@ export default function AdminPage() {
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setSearchQuery(''); setStatusFilter('ALL'); }}
+                onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-700'
@@ -180,58 +189,122 @@ export default function AdminPage() {
                   <p>Нет пользователей</p>
                 </div>
               ) : (
-                filteredUsers.map(user => (
-                  <div key={user.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                      user.status === 'active' ? 'bg-emerald-50' :
-                      user.status === 'pending' ? 'bg-amber-50' : 'bg-red-50'
-                    }`}>
-                      {user.status === 'active' && <UserCheck className="w-5 h-5 text-emerald-600" />}
-                      {user.status === 'pending' && <Clock className="w-5 h-5 text-amber-600" />}
-                      {user.status === 'rejected' && <UserX className="w-5 h-5 text-red-600" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900">{user.fullName}</p>
-                      <p className="text-xs text-slate-500">{user.email}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Роль: <span className="font-medium">
-                          {user.role === 'superadmin' ? 'Администратор' : 
-                           user.role === 'methodist' ? 'Методист' : 'Преподаватель'}
-                        </span>
-                        {' • '}
-                        Регистрация: {new Date(user.registeredAt).toLocaleString('ru-RU')}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {user.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => approveUser(user.id)}
-                            className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-medium rounded-lg hover:bg-emerald-600 transition"
-                          >
-                            Одобрить
-                          </button>
-                          <button
-                            onClick={() => rejectUser(user.id)}
-                            className="px-3 py-1.5 border border-slate-200 text-slate-600 text-xs font-medium rounded-lg hover:bg-slate-100 transition"
-                          >
-                            Отклонить
-                          </button>
-                        </>
+                filteredUsers.map(user => {
+                  const userAccesses = userCourseAccess.filter(a => a.userId === user.id);
+                  const isExpanded = expandedUser === user.id;
+
+                  return (
+                    <div key={user.id}>
+                      <div className="p-4 flex items-center gap-4 hover:bg-slate-50 transition">
+                        <button
+                          onClick={() => setExpandedUser(isExpanded ? null : user.id)}
+                          className="p-1 hover:bg-slate-200 rounded transition"
+                        >
+                          {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-600" /> : <ChevronRight className="w-4 h-4 text-slate-600" />}
+                        </button>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                          user.status === 'active' ? 'bg-emerald-50' :
+                          user.status === 'pending' ? 'bg-amber-50' : 'bg-red-50'
+                        }`}>
+                          {user.status === 'active' && <UserCheck className="w-5 h-5 text-emerald-600" />}
+                          {user.status === 'pending' && <Clock className="w-5 h-5 text-amber-600" />}
+                          {user.status === 'rejected' && <UserX className="w-5 h-5 text-red-600" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900">{user.fullName}</p>
+                          <p className="text-xs text-slate-500">{user.email}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Роль: <span className="font-medium">
+                              {user.role === 'superadmin' ? 'Администратор' : 
+                               user.role === 'methodist' ? 'Методист' : 'Преподаватель'}
+                            </span>
+                            {' • '}
+                            {userAccesses.length} {userAccesses.length === 1 ? 'курс' : 'курсов'}
+                            {' • '}
+                            Регистрация: {new Date(user.registeredAt).toLocaleDateString('ru-RU')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {user.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => approveUser(user.id)}
+                                className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-medium rounded-lg hover:bg-emerald-600 transition"
+                              >
+                                Одобрить
+                              </button>
+                              <button
+                                onClick={() => rejectUser(user.id)}
+                                className="px-3 py-1.5 border border-slate-200 text-slate-600 text-xs font-medium rounded-lg hover:bg-slate-100 transition"
+                              >
+                                Отклонить
+                              </button>
+                            </>
+                          )}
+                          {user.status === 'active' && (
+                            <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded">
+                              Активен
+                            </span>
+                          )}
+                          {user.status === 'rejected' && (
+                            <span className="px-2 py-1 bg-red-50 text-red-700 text-xs font-medium rounded">
+                              Отклонён
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Expanded user details */}
+                      {isExpanded && user.status === 'active' && (
+                        <div className="bg-slate-50/50 px-4 pb-4 pl-14">
+                          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                            <div className="px-4 py-3 bg-slate-100 border-b border-slate-200">
+                              <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <BookOpen className="w-4 h-4 text-blue-600" />
+                                Доступы к курсам ({userAccesses.length})
+                              </h4>
+                            </div>
+                            {userAccesses.length === 0 ? (
+                              <div className="p-4 text-center text-sm text-slate-500">
+                                Нет доступов к курсам
+                              </div>
+                            ) : (
+                              <div className="divide-y divide-slate-100">
+                                {userAccesses.map((access, idx) => {
+                                  const course = courses.find(c => c.id === access.courseId);
+                                  return (
+                                    <div key={idx} className="p-3 flex items-center gap-3 hover:bg-slate-50 transition">
+                                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                                        <BookOpen className="w-4 h-4 text-blue-600" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-slate-900">{course?.title || 'Курс удалён'}</p>
+                                        <p className="text-xs text-slate-500">
+                                          Выдан: {new Date(access.grantedAt).toLocaleDateString('ru-RU')}
+                                        </p>
+                                      </div>
+                                      <button
+                                        onClick={() => {
+                                          if (confirm(`Отозвать доступ к курсу "${course?.title}"?`)) {
+                                            revokeAccess(user.id, access.courseId);
+                                          }
+                                        }}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                        Отозвать
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
-                      {user.status === 'active' && (
-                        <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded">
-                          Активен
-                        </span>
-                      )}
-                      {user.status === 'rejected' && (
-                        <span className="px-2 py-1 bg-red-50 text-red-700 text-xs font-medium rounded">
-                          Отклонён
-                        </span>
-                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </>
           )}
@@ -290,35 +363,6 @@ export default function AdminPage() {
                   </div>
                 ))
               )}
-            </>
-          )}
-
-          {activeTab === 'access' && (
-            <>
-              {userCourseAccess.map((access, idx) => {
-                const course = courses.find(c => c.id === access.courseId);
-                return (
-                  <div key={idx} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                      <Users className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900">
-                        Пользователь: {access.userId}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Курс: <span className="font-medium">{course?.title || access.courseId}</span>
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Выдан: {access.grantedAt || '—'}
-                      </p>
-                    </div>
-                    <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded">
-                      Активен
-                    </span>
-                  </div>
-                );
-              })}
             </>
           )}
 
