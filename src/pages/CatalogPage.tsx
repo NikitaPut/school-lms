@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, Unlock, BookOpen, Users, Clock, X, Send, CheckCircle, ChevronRight } from 'lucide-react';
 
 export default function CatalogPage() {
-  const { courses, currentUser, hasAccess, requestAccess, getProgress } = useApp();
+  const { courses, modules, lessons, currentUser, hasAccess, requestAccess, getProgress } = useApp();
   const navigate = useNavigate();
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [requestSent, setRequestSent] = useState<Set<string>>(new Set());
@@ -18,6 +18,16 @@ export default function CatalogPage() {
   const filteredCourses = activeCategory === 'main' ? mainCourses 
     : activeCategory === 'olymp' ? olympCourses 
     : courses;
+
+  // Функция для подсчёта уроков в курсе
+  const getCourseLessonCount = (courseId: string) => {
+    const courseModuleIds = modules.filter(m => m.courseId === courseId).map(m => m.id);
+    return lessons.filter(l => courseModuleIds.includes(l.moduleId)).length;
+  };
+
+  const getCourseModuleCount = (courseId: string) => {
+    return modules.filter(m => m.courseId === courseId).length;
+  };
 
   const handleCourseClick = (courseId: string) => {
     if (hasAccess(courseId)) {
@@ -161,11 +171,11 @@ export default function CatalogPage() {
                 <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
                   <span className="flex items-center gap-1">
                     <BookOpen className="w-3.5 h-3.5" />
-                    {course.moduleCount} {course.moduleCount === 3 ? 'года обучения' : 'модуля'}
+                    {getCourseModuleCount(course.id)} {getCourseModuleCount(course.id) === 3 ? 'года обучения' : 'модулей'}
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5" />
-                    {course.lessonCount} уроков
+                    {getCourseLessonCount(course.id)} уроков
                   </span>
                 </div>
 

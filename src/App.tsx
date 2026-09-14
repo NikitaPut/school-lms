@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import CatalogPage from './pages/CatalogPage';
 import CoursePage from './pages/CoursePage';
 import AdminPage from './pages/AdminPage';
+import ManageCoursesPage from './pages/ManageCoursesPage';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,7 @@ function AppRoutes() {
       >
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/course/:courseId" element={<CoursePage />} />
+        <Route path="/courses/manage" element={<ManageCoursesPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to={isAuthenticated ? "/catalog" : "/login"} replace />} />

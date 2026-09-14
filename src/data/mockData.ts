@@ -1,11 +1,11 @@
 import { Course, Module, Lesson, User, AccessRequest, AuditLogEntry } from '../types';
 
 export const mockUsers: User[] = [
-  { id: 'u1', email: 'admin@eduvault.ru', fullName: 'Иванов Алексей', role: 'superadmin' },
-  { id: 'u2', email: 'methodist@eduvault.ru', fullName: 'Петрова Мария', role: 'methodist' },
-  { id: 'u3', email: 'teacher1@eduvault.ru', fullName: 'Сидорова Елена', role: 'teacher' },
-  { id: 'u4', email: 'teacher2@eduvault.ru', fullName: 'Козлов Дмитрий', role: 'teacher' },
-  { id: 'u5', email: 'teacher3@eduvault.ru', fullName: 'Новикова Анна', role: 'teacher' },
+  { id: 'u1', email: 'admin@azimovclub.com', fullName: 'Иванов Алексей', role: 'superadmin' },
+  { id: 'u2', email: 'methodist@azimovclub.com', fullName: 'Петрова Мария', role: 'methodist' },
+  { id: 'u3', email: 'teacher1@azimovclub.com', fullName: 'Сидорова Елена', role: 'teacher' },
+  { id: 'u4', email: 'teacher2@azimovclub.com', fullName: 'Козлов Дмитрий', role: 'teacher' },
+  { id: 'u5', email: 'teacher3@azimovclub.com', fullName: 'Новикова Анна', role: 'teacher' },
 ];
 
 export const mockCourses: Course[] = [

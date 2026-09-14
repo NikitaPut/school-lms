@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, Course, AccessRequest, AuditLogEntry } from '../types';
-import { mockUsers, mockCourses, mockAccessRequests, mockAuditLog, mockUserCourseAccess } from '../data/mockData';
+import { User, Course, AccessRequest, AuditLogEntry, Module, Lesson, Material } from '../types';
+import { mockUsers, mockCourses, mockAccessRequests, mockAuditLog, mockUserCourseAccess, mockModules, mockLessons } from '../data/mockData';
 
 interface AppState {
   currentUser: User | null;
   courses: Course[];
+  modules: Module[];
+  lessons: Lesson[];
   accessRequests: AccessRequest[];
   auditLog: AuditLogEntry[];
   userCourseAccess: { userId: string; courseId: string; grantedBy: string; grantedAt: string }[];
@@ -19,13 +21,28 @@ interface AppState {
   getProgress: (courseId: string) => number;
   completedLessons: { userId: string; lessonId: string }[];
   markLessonComplete: (lessonId: string) => void;
+  // Course CRUD
+  addCourse: (title: string, description: string, color: string) => void;
+  deleteCourse: (courseId: string) => void;
+  // Module CRUD
+  addModule: (courseId: string, title: string) => void;
+  deleteModule: (moduleId: string) => void;
+  // Lesson CRUD
+  addLesson: (moduleId: string, title: string, content: string) => void;
+  updateLesson: (lessonId: string, updates: Partial<Lesson>) => void;
+  deleteLesson: (lessonId: string) => void;
+  // Material CRUD
+  addMaterial: (lessonId: string, type: Material['type'], title: string, content: string) => void;
+  deleteMaterial: (materialId: string) => void;
 }
 
 const AppContext = createContext<AppState | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [courses] = useState<Course[]>(mockCourses);
+  const [courses, setCourses] = useState<Course[]>(mockCourses);
+  const [modules, setModules] = useState<Module[]>(mockModules);
+  const [lessons, setLessons] = useState<Lesson[]>(mockLessons);
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>(mockAccessRequests);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(mockAuditLog);
   const [userCourseAccess, setUserCourseAccess] = useState<{ userId: string; courseId: string; grantedBy: string; grantedAt: string }[]>(mockUserCourseAccess);
@@ -56,51 +73,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return userCourseAccess.some(a => a.userId === currentUser.id && a.courseId === courseId);
   }, [currentUser, userCourseAccess]);
 
-  const requestAccess = useCallback((courseId: string) => {
-    if (!currentUser) return;
-    const course = courses.find(c => c.id === courseId);
-    if (!course) return;
-    
-    const newRequest: AccessRequest = {
-      id: `ar${Date.now()}`,
-      userId: currentUser.id,
-      userName: currentUser.fullName,
-      courseId,
-      courseTitle: course.title,
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-    };
-    setAccessRequests(prev => [...prev, newRequest]);
-    addAuditEntry('REQUEST_ACCESS', 'course', courseId);
-  }, [currentUser, courses]);
-
-  const approveRequest = useCallback((requestId: string) => {
-    if (!currentUser) return;
-    const request = accessRequests.find(r => r.id === requestId);
-    if (!request) return;
-
-    setUserCourseAccess(prev => [...prev, { userId: request.userId, courseId: request.courseId, grantedBy: currentUser.id, grantedAt: new Date().toISOString() }]);
-    setAccessRequests(prev => prev.map(r => 
-      r.id === requestId 
-        ? { ...r, status: 'APPROVED' as const, reviewedBy: currentUser.id, reviewedAt: new Date().toISOString() }
-        : r
-    ));
-    addAuditEntry('GRANT_ACCESS', 'course', request.courseId);
-  }, [currentUser, accessRequests]);
-
-  const rejectRequest = useCallback((requestId: string) => {
-    if (!currentUser) return;
-    const request = accessRequests.find(r => r.id === requestId);
-    if (!request) return;
-
-    setAccessRequests(prev => prev.map(r => 
-      r.id === requestId 
-        ? { ...r, status: 'REJECTED' as const, reviewedBy: currentUser.id, reviewedAt: new Date().toISOString() }
-        : r
-    ));
-    addAuditEntry('REJECT_ACCESS', 'course', request.courseId);
-  }, [currentUser, accessRequests]);
-
   const addAuditEntry = useCallback((action: string, resourceType: string, resourceId: string) => {
     if (!currentUser) return;
     const entry: AuditLogEntry = {
@@ -117,19 +89,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuditLog(prev => [entry, ...prev]);
   }, [currentUser]);
 
+  const requestAccess = useCallback((courseId: string) => {
+    if (!currentUser) return;
+    const course = courses.find(c => c.id === courseId);
+    if (!course) return;
+    
+    const newRequest: AccessRequest = {
+      id: `ar${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.fullName,
+      courseId,
+      courseTitle: course.title,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    setAccessRequests(prev => [...prev, newRequest]);
+    addAuditEntry('REQUEST_ACCESS', 'course', courseId);
+  }, [currentUser, courses, addAuditEntry]);
+
+  const approveRequest = useCallback((requestId: string) => {
+    if (!currentUser) return;
+    const request = accessRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    setUserCourseAccess(prev => [...prev, { userId: request.userId, courseId: request.courseId, grantedBy: currentUser.id, grantedAt: new Date().toISOString() }]);
+    setAccessRequests(prev => prev.map(r => 
+      r.id === requestId 
+        ? { ...r, status: 'APPROVED' as const, reviewedBy: currentUser.id, reviewedAt: new Date().toISOString() }
+        : r
+    ));
+    addAuditEntry('GRANT_ACCESS', 'course', request.courseId);
+  }, [currentUser, accessRequests, addAuditEntry]);
+
+  const rejectRequest = useCallback((requestId: string) => {
+    if (!currentUser) return;
+    const request = accessRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    setAccessRequests(prev => prev.map(r => 
+      r.id === requestId 
+        ? { ...r, status: 'REJECTED' as const, reviewedBy: currentUser.id, reviewedAt: new Date().toISOString() }
+        : r
+    ));
+    addAuditEntry('REJECT_ACCESS', 'course', request.courseId);
+  }, [currentUser, accessRequests, addAuditEntry]);
+
   const getProgress = useCallback((courseId: string): number => {
     if (!currentUser) return 0;
-    // Подсчитываем прогресс по курсу на основе завершённых уроков
-    // Для прототипа используем упрощённую логику
     const courseLessonsMap: { [key: string]: string[] } = {
-      'c1': ['l1', 'l2', 'l3', 'l4', 'l5'], // Робототехника
-      'c2': [], // Пайка
-      'c3': ['l6', 'l7', 'l8'], // Python
-      'c4': ['l11', 'l12'], // Minecraft
-      'c5': ['l9', 'l10'], // Unity
-      'c6': [], // Олимпиада Робототехника
-      'c7': [], // Олимпиада Программирование
-      'c8': [], // Олимпиада GameDev
+      'c1': ['l1', 'l2', 'l3', 'l4', 'l5'],
+      'c2': [],
+      'c3': ['l6', 'l7', 'l8'],
+      'c4': ['l11', 'l12'],
+      'c5': ['l9', 'l10'],
+      'c6': [],
+      'c7': [],
+      'c8': [],
     };
     
     const courseLessons = courseLessonsMap[courseId] || [];
@@ -148,12 +163,123 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return [...prev, { userId: currentUser.id, lessonId }];
     });
     addAuditEntry('COMPLETE_LESSON', 'lesson', lessonId);
-  }, [currentUser]);
+  }, [currentUser, addAuditEntry]);
+
+  // === COURSE CRUD ===
+  const addCourse = useCallback((title: string, description: string, color: string) => {
+    const newCourse: Course = {
+      id: `c${Date.now()}`,
+      title,
+      description,
+      previewUrl: '',
+      authorId: currentUser?.id || 'u2',
+      authorName: currentUser?.fullName || 'Методист',
+      status: 'ACTIVE',
+      moduleCount: 0,
+      lessonCount: 0,
+      color,
+    };
+    setCourses(prev => [...prev, newCourse]);
+    addAuditEntry('CREATE_COURSE', 'course', newCourse.id);
+  }, [currentUser, addAuditEntry]);
+
+  const deleteCourse = useCallback((courseId: string) => {
+    setCourses(prev => prev.filter(c => c.id !== courseId));
+    setModules(prev => prev.filter(m => m.courseId !== courseId));
+    const moduleIds = modules.filter(m => m.courseId === courseId).map(m => m.id);
+    setLessons(prev => prev.filter(l => !moduleIds.includes(l.moduleId)));
+    addAuditEntry('DELETE_COURSE', 'course', courseId);
+  }, [modules, addAuditEntry]);
+
+  // === MODULE CRUD ===
+  const addModule = useCallback((courseId: string, title: string) => {
+    const courseModules = modules.filter(m => m.courseId === courseId);
+    const newModule: Module = {
+      id: `m${Date.now()}`,
+      courseId,
+      title,
+      orderIndex: courseModules.length + 1,
+    };
+    setModules(prev => [...prev, newModule]);
+    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, moduleCount: c.moduleCount + 1 } : c));
+    addAuditEntry('CREATE_MODULE', 'module', newModule.id);
+  }, [modules, addAuditEntry]);
+
+  const deleteModule = useCallback((moduleId: string) => {
+    const module = modules.find(m => m.id === moduleId);
+    if (!module) return;
+    setModules(prev => prev.filter(m => m.id !== moduleId));
+    setLessons(prev => prev.filter(l => l.moduleId !== moduleId));
+    setCourses(prev => prev.map(c => c.id === module.courseId ? { ...c, moduleCount: Math.max(0, c.moduleCount - 1) } : c));
+    addAuditEntry('DELETE_MODULE', 'module', moduleId);
+  }, [modules, addAuditEntry]);
+
+  // === LESSON CRUD ===
+  const addLesson = useCallback((moduleId: string, title: string, content: string) => {
+    const moduleLessons = lessons.filter(l => l.moduleId === moduleId);
+    const newLesson: Lesson = {
+      id: `l${Date.now()}`,
+      moduleId,
+      title,
+      orderIndex: moduleLessons.length + 1,
+      content,
+      materials: [],
+    };
+    setLessons(prev => [...prev, newLesson]);
+    const module = modules.find(m => m.id === moduleId);
+    if (module) {
+      setCourses(prev => prev.map(c => c.id === module.courseId ? { ...c, lessonCount: c.lessonCount + 1 } : c));
+    }
+    addAuditEntry('CREATE_LESSON', 'lesson', newLesson.id);
+  }, [lessons, modules, addAuditEntry]);
+
+  const updateLesson = useCallback((lessonId: string, updates: Partial<Lesson>) => {
+    setLessons(prev => prev.map(l => l.id === lessonId ? { ...l, ...updates } : l));
+  }, []);
+
+  const deleteLesson = useCallback((lessonId: string) => {
+    const lesson = lessons.find(l => l.id === lessonId);
+    if (!lesson) return;
+    setLessons(prev => prev.filter(l => l.id !== lessonId));
+    const module = modules.find(m => m.id === lesson.moduleId);
+    if (module) {
+      setCourses(prev => prev.map(c => c.id === module.courseId ? { ...c, lessonCount: Math.max(0, c.lessonCount - 1) } : c));
+    }
+    addAuditEntry('DELETE_LESSON', 'lesson', lessonId);
+  }, [lessons, modules, addAuditEntry]);
+
+  // === MATERIAL CRUD ===
+  const addMaterial = useCallback((lessonId: string, type: Material['type'], title: string, content: string) => {
+    const lesson = lessons.find(l => l.id === lessonId);
+    if (!lesson) return;
+    const newMaterial: Material = {
+      id: `mat${Date.now()}`,
+      lessonId,
+      type,
+      title,
+      content,
+      orderIndex: lesson.materials.length + 1,
+    };
+    setLessons(prev => prev.map(l => 
+      l.id === lessonId ? { ...l, materials: [...l.materials, newMaterial] } : l
+    ));
+    addAuditEntry('ADD_MATERIAL', 'material', newMaterial.id);
+  }, [lessons, addAuditEntry]);
+
+  const deleteMaterial = useCallback((materialId: string) => {
+    setLessons(prev => prev.map(l => ({
+      ...l,
+      materials: l.materials.filter(m => m.id !== materialId),
+    })));
+    addAuditEntry('DELETE_MATERIAL', 'material', materialId);
+  }, [addAuditEntry]);
 
   return (
     <AppContext.Provider value={{
       currentUser,
       courses,
+      modules,
+      lessons,
       accessRequests,
       auditLog,
       userCourseAccess,
@@ -168,6 +294,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       getProgress,
       completedLessons,
       markLessonComplete,
+      addCourse,
+      deleteCourse,
+      addModule,
+      deleteModule,
+      addLesson,
+      updateLesson,
+      deleteLesson,
+      addMaterial,
+      deleteMaterial,
     }}>
       {children}
     </AppContext.Provider>
