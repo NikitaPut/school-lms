@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { LayoutGrid, Shield, LogOut, User, Bell, Plus } from 'lucide-react';
 import AzimovLogo from './AzimovLogo';
+import ContentProtection from './ContentProtection';
 
 export default function Layout() {
   const { currentUser, logout, accessRequests } = useApp();
@@ -28,6 +29,9 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Защита контента */}
+      <ContentProtection />
+      
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
