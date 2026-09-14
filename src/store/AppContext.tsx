@@ -18,6 +18,7 @@ interface AppState {
   approveUser: (userId: string) => void;
   rejectUser: (userId: string) => void;
   revokeAccess: (userId: string, courseId: string) => void;
+  grantAccess: (userId: string, courseId: string) => void;
   hasAccess: (courseId: string) => boolean;
   requestAccess: (courseId: string) => void;
   approveRequest: (requestId: string) => void;
@@ -115,6 +116,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const revokeAccess = useCallback((userId: string, courseId: string) => {
     setUserCourseAccess(prev => prev.filter(a => !(a.userId === userId && a.courseId === courseId)));
   }, []);
+
+  const grantAccess = useCallback((userId: string, courseId: string) => {
+    const existing = userCourseAccess.find(a => a.userId === userId && a.courseId === courseId);
+    if (!existing && currentUser) {
+      setUserCourseAccess(prev => [...prev, {
+        userId,
+        courseId,
+        grantedBy: currentUser.id,
+        grantedAt: new Date().toISOString()
+      }]);
+    }
+  }, [userCourseAccess, currentUser]);
 
   const hasAccess = useCallback((courseId: string): boolean => {
     if (!currentUser) return false;
@@ -348,6 +361,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       approveUser,
       rejectUser,
       revokeAccess,
+      grantAccess,
       hasAccess,
       requestAccess,
       approveRequest,
