@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Unlock, BookOpen, Users, Clock, X, Send, CheckCircle, ChevronRight } from 'lucide-react';
+import { Course } from '../types';
 
 export default function CatalogPage() {
   const { courses, modules, lessons, currentUser, hasAccess, requestAccess, getProgress } = useApp();
@@ -15,9 +16,17 @@ export default function CatalogPage() {
   const mainCourses = courses.filter(c => !c.title.startsWith('Олимпиадная'));
   const olympCourses = courses.filter(c => c.title.startsWith('Олимпиадная'));
   
-  const filteredCourses = activeCategory === 'main' ? mainCourses 
+  // Фильтрация по категории
+  const categoryCourses = activeCategory === 'main' ? mainCourses 
     : activeCategory === 'olymp' ? olympCourses 
     : courses;
+  
+  // Сортировка: сначала доступные, потом закрытые
+  const filteredCourses = [...categoryCourses].sort((a, b) => {
+    const aAccess = hasAccess(a.id) ? 0 : 1;
+    const bAccess = hasAccess(b.id) ? 0 : 1;
+    return aAccess - bAccess;
+  });
 
   // Функция для подсчёта уроков в курсе
   const getCourseLessonCount = (courseId: string) => {
@@ -45,6 +54,8 @@ export default function CatalogPage() {
   };
 
   const selectedCourseData = courses.find(c => c.id === selectedCourse);
+  const accessibleCourses = filteredCourses.filter(c => hasAccess(c.id));
+  const lockedCourses = filteredCourses.filter(c => !hasAccess(c.id));
 
   return (
     <div>
@@ -108,7 +119,7 @@ export default function CatalogPage() {
             <Unlock className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900">{filteredCourses.filter(c => hasAccess(c.id)).length}</p>
+            <p className="text-2xl font-bold text-slate-900">{accessibleCourses.length}</p>
             <p className="text-sm text-slate-500">Доступно вам</p>
           </div>
         </div>
@@ -117,101 +128,61 @@ export default function CatalogPage() {
             <Clock className="w-5 h-5 text-amber-600" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900">{filteredCourses.filter(c => !hasAccess(c.id)).length}</p>
+            <p className="text-2xl font-bold text-slate-900">{lockedCourses.length}</p>
             <p className="text-sm text-slate-500">Закрыты</p>
           </div>
         </div>
       </div>
 
-      {/* Course Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCourses.map(course => {
-          const accessible = hasAccess(course.id);
-          const progress = getProgress(course.id);
-          const alreadyRequested = requestSent.has(course.id);
+      {/* Доступные курсы */}
+      {accessibleCourses.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-6 bg-emerald-500 rounded-full" />
+            <h2 className="text-lg font-semibold text-slate-900">Доступные курсы</h2>
+            <span className="text-sm text-slate-500">({accessibleCourses.length})</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {accessibleCourses.map(course => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                accessible={true}
+                progress={getProgress(course.id)}
+                alreadyRequested={requestSent.has(course.id)}
+                moduleCount={getCourseModuleCount(course.id)}
+                lessonCount={getCourseLessonCount(course.id)}
+                onClick={() => handleCourseClick(course.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
-          return (
-            <div
-              key={course.id}
-              onClick={() => handleCourseClick(course.id)}
-              className={`group relative bg-white rounded-xl border overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
-                accessible 
-                  ? 'border-slate-200 hover:border-blue-300' 
-                  : 'border-slate-200 opacity-70 hover:opacity-90'
-              }`}
-            >
-              {/* Course preview banner */}
-              <div className={`h-32 bg-gradient-to-br ${course.color} relative overflow-hidden`}>
-                <div className="absolute inset-0 bg-black/10" />
-                <div className="absolute bottom-3 left-4 right-4">
-                  <h3 className="text-white font-semibold text-lg leading-tight drop-shadow-sm">
-                    {course.title}
-                  </h3>
-                </div>
-                {!accessible && (
-                  <div className="absolute top-3 right-3">
-                    <div className="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                      <Lock className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                )}
-                {accessible && (
-                  <div className="absolute top-3 right-3">
-                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Unlock className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Course info */}
-              <div className="p-4">
-                <p className="text-sm text-slate-600 line-clamp-2 mb-3">{course.description}</p>
-                
-                <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="w-3.5 h-3.5" />
-                    {getCourseModuleCount(course.id)} {getCourseModuleCount(course.id) === 3 ? 'года обучения' : 'модулей'}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />
-                    {getCourseLessonCount(course.id)} уроков
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Автор: {course.authorName}</span>
-                  {accessible && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-emerald-500 rounded-full transition-all"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-emerald-600 font-medium">{progress}%</span>
-                    </div>
-                  )}
-                </div>
-
-                {accessible && (
-                  <div className="mt-3 flex items-center text-sm text-blue-600 font-medium group-hover:gap-2 transition-all">
-                    <span>Перейти к курсу</span>
-                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition" />
-                  </div>
-                )}
-
-                {!accessible && alreadyRequested && (
-                  <div className="mt-3 flex items-center gap-1.5 text-sm text-amber-600">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Заявка отправлена</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Закрытые курсы */}
+      {lockedCourses.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-6 bg-slate-300 rounded-full" />
+            <h2 className="text-lg font-semibold text-slate-700">Закрытые курсы</h2>
+            <span className="text-sm text-slate-500">({lockedCourses.length})</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {lockedCourses.map(course => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                accessible={false}
+                progress={getProgress(course.id)}
+                alreadyRequested={requestSent.has(course.id)}
+                moduleCount={getCourseModuleCount(course.id)}
+                lessonCount={getCourseLessonCount(course.id)}
+                onClick={() => handleCourseClick(course.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Access Request Modal */}
       {showRequestModal && selectedCourseData && (
@@ -257,6 +228,99 @@ export default function CatalogPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Компонент карточки курса
+interface CourseCardProps {
+  course: Course;
+  accessible: boolean;
+  progress: number;
+  alreadyRequested: boolean;
+  moduleCount: number;
+  lessonCount: number;
+  onClick: () => void;
+}
+
+function CourseCard({ course, accessible, progress, alreadyRequested, moduleCount, lessonCount, onClick }: CourseCardProps) {
+  return (
+    <div
+      onClick={onClick}
+      className={`group relative bg-white rounded-xl border overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
+        accessible 
+          ? 'border-slate-200 hover:border-blue-300' 
+          : 'border-slate-200 opacity-70 hover:opacity-90'
+      }`}
+    >
+      {/* Course preview banner */}
+      <div className={`h-32 bg-gradient-to-br ${course.color} relative overflow-hidden`}>
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute bottom-3 left-4 right-4">
+          <h3 className="text-white font-semibold text-lg leading-tight drop-shadow-sm">
+            {course.title}
+          </h3>
+        </div>
+        {!accessible && (
+          <div className="absolute top-3 right-3">
+            <div className="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
+              <Lock className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        )}
+        {accessible && (
+          <div className="absolute top-3 right-3">
+            <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <Unlock className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Course info */}
+      <div className="p-4">
+        <p className="text-sm text-slate-600 line-clamp-2 mb-3">{course.description}</p>
+        
+        <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+          <span className="flex items-center gap-1">
+            <BookOpen className="w-3.5 h-3.5" />
+            {moduleCount} {moduleCount === 3 ? 'года обучения' : 'модулей'}
+          </span>
+          <span className="flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" />
+            {lessonCount} уроков
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-slate-400">Автор: {course.authorName}</span>
+          {accessible && (
+            <div className="flex items-center gap-2">
+              <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 rounded-full transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="text-xs text-emerald-600 font-medium">{progress}%</span>
+            </div>
+          )}
+        </div>
+
+        {accessible && (
+          <div className="mt-3 flex items-center text-sm text-blue-600 font-medium group-hover:gap-2 transition-all">
+            <span>Перейти к курсу</span>
+            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition" />
+          </div>
+        )}
+
+        {!accessible && alreadyRequested && (
+          <div className="mt-3 flex items-center gap-1.5 text-sm text-amber-600">
+            <Clock className="w-3.5 h-3.5" />
+            <span>Заявка отправлена</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
