@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { 
@@ -20,6 +20,7 @@ export default function CoursePage() {
   const [questionAttachments, setQuestionAttachments] = useState<Attachment[]>([]);
   const [answerAttachments, setAnswerAttachments] = useState<{ [key: string]: Attachment[] }>({});
   const [mediaViewer, setMediaViewer] = useState<{ attachment: Attachment; visible: boolean } | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const course = courses.find(c => c.id === courseId);
   const courseModules = modules.filter(m => m.courseId === courseId).sort((a, b) => a.orderIndex - b.orderIndex);
@@ -123,8 +124,26 @@ export default function CoursePage() {
   };
 
   const closeMediaViewer = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
     setMediaViewer(null);
   };
+
+  // Автоматический запуск видео при открытии модального окна
+  useEffect(() => {
+    if (mediaViewer?.visible && mediaViewer.attachment.type === 'video' && videoRef.current) {
+      const playVideo = async () => {
+        try {
+          await videoRef.current?.play();
+        } catch (error) {
+          console.log('Автозапуск заблокирован, пользователь должен нажать Play');
+        }
+      };
+      // Небольшая задержка для загрузки видео
+      setTimeout(playVideo, 100);
+    }
+  }, [mediaViewer]);
 
   const totalLessons = courseLessons.length;
   const completedCount = courseLessons.filter(l => isLessonCompleted(l.id)).length;
@@ -647,12 +666,20 @@ export default function CoursePage() {
         />
       ) : (
         <video 
+          ref={videoRef}
           src={mediaViewer.attachment.url}
-          className="max-w-full max-h-[85vh] rounded-lg bg-black"
+          className="max-w-full max-h-[85vh] rounded-lg"
           controls
           playsInline
-          preload="metadata"
-        />
+          preload="auto"
+          onLoadedData={() => console.log('Видео загружено')}
+          onError={(e) => console.error('Ошибка загрузки видео:', e)}
+          style={{ backgroundColor: '#000' }}
+        >
+          <source src={mediaViewer.attachment.url} type="video/mp4" />
+          <source src={mediaViewer.attachment.url} type="video/webm" />
+          Ваш браузер не поддерживает воспроизведение видео.
+        </video>
       )}            
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-lg">
               <p className="text-white text-sm font-medium">{mediaViewer.attachment.name}</p>
