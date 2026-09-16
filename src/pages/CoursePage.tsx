@@ -3,16 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { 
   ArrowLeft, BookOpen, CheckCircle, Circle, ChevronDown, ChevronRight, 
-  FileText, Link2, Play, Shield, Eye, AlertTriangle, Clock, Download
+  FileText, Link2, Play, Shield, Eye, AlertTriangle, Clock, Download,
+  MessageCircle, Send, User
 } from 'lucide-react';
 
 export default function CoursePage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { courses, modules, lessons, hasAccess, currentUser, markLessonComplete, completedLessons, addAuditEntry } = useApp();
+  const { courses, modules, lessons, questions, users, hasAccess, currentUser, markLessonComplete, completedLessons, addAuditEntry, addQuestion, addAnswer } = useApp();
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
   const [showWatermark, setShowWatermark] = useState(true);
+  const [newQuestion, setNewQuestion] = useState('');
+  const [newAnswer, setNewAnswer] = useState<{ [key: string]: string }>({});
 
   const course = courses.find(c => c.id === courseId);
   const courseModules = modules.filter(m => m.courseId === courseId).sort((a, b) => a.orderIndex - b.orderIndex);
@@ -276,6 +279,123 @@ export default function CoursePage() {
                   </div>
                 </div>
               )}
+
+              {/* Questions & Answers */}
+              <div className="px-6 pb-6 border-t border-slate-100">
+                <div className="pt-6">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-blue-600" />
+                    Вопросы и ответы
+                    {questions.filter(q => q.lessonId === currentLesson.id).length > 0 && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                        {questions.filter(q => q.lessonId === currentLesson.id).length}
+                      </span>
+                    )}
+                  </h3>
+
+                  {/* Existing questions */}
+                  <div className="space-y-4 mb-6">
+                    {questions
+                      .filter(q => q.lessonId === currentLesson.id)
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .map(question => (
+                        <div key={question.id} className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                          {/* Question */}
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                              <User className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-medium text-slate-900">{question.userName}</span>
+                                <span className="text-xs text-slate-400">
+                                  {new Date(question.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                              </div>
+                              <p className="text-sm text-slate-700">{question.text}</p>
+                            </div>
+                          </div>
+
+                          {/* Answers */}
+                          {question.answers.length > 0 && (
+                            <div className="ml-11 space-y-3 mb-3">
+                              {question.answers.map(answer => (
+                                <div key={answer.id} className="flex items-start gap-3">
+                                  <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                                    <User className="w-3.5 h-3.5 text-emerald-600" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-sm font-medium text-slate-900">{answer.userName}</span>
+                                      {users.find(u => u.id === answer.userId)?.role === 'methodist' && (
+                                        <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded">
+                                          Методист
+                                        </span>
+                                      )}
+                                      <span className="text-xs text-slate-400">
+                                        {new Date(answer.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-slate-700">{answer.text}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Answer input */}
+                          <div className="ml-11 flex gap-2">
+                            <input
+                              type="text"
+                              value={newAnswer[question.id] || ''}
+                              onChange={e => setNewAnswer({ ...newAnswer, [question.id]: e.target.value })}
+                              placeholder="Ответить..."
+                              className="flex-1 px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                            />
+                            <button
+                              onClick={() => {
+                                if (newAnswer[question.id]?.trim()) {
+                                  addAnswer(question.id, newAnswer[question.id]);
+                                  setNewAnswer({ ...newAnswer, [question.id]: '' });
+                                }
+                              }}
+                              disabled={!newAnswer[question.id]?.trim()}
+                              className="px-3 py-1.5 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* New question form */}
+                  <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">Задать вопрос</h4>
+                    <div className="flex gap-2">
+                      <textarea
+                        value={newQuestion}
+                        onChange={e => setNewQuestion(e.target.value)}
+                        placeholder="Введите ваш вопрос по этому уроку..."
+                        rows={2}
+                        className="flex-1 px-3 py-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none"
+                      />
+                      <button
+                        onClick={() => {
+                          if (newQuestion.trim()) {
+                            addQuestion(currentLesson.id, newQuestion);
+                            setNewQuestion('');
+                          }
+                        }}
+                        disabled={!newQuestion.trim()}
+                        className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed self-end"
+                      >
+                        Отправить
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Complete button */}
               <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">

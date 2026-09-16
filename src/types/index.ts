@@ -75,6 +75,25 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+export interface Question {
+  id: string;
+  lessonId: string;
+  userId: string;
+  userName: string;
+  text: string;
+  createdAt: string;
+  answers: Answer[];
+}
+
+export interface Answer {
+  id: string;
+  questionId: string;
+  userId: string;
+  userName: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface UserCourseAccess {
   userId: string;
   courseId: string;

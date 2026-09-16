@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, Course, AccessRequest, AuditLogEntry, Module, Lesson, Material } from '../types';
-import { mockUsers, mockCourses, mockAccessRequests, mockAuditLog, mockUserCourseAccess, mockModules, mockLessons } from '../data/mockData';
+import { User, Course, AccessRequest, AuditLogEntry, Module, Lesson, Material, Question } from '../types';
+import { mockUsers, mockCourses, mockAccessRequests, mockAuditLog, mockUserCourseAccess, mockModules, mockLessons, mockQuestions } from '../data/mockData';
 
 interface AppState {
   currentUser: User | null;
@@ -41,6 +41,10 @@ interface AppState {
   addMaterial: (lessonId: string, type: Material['type'], title: string, content: string, downloadable?: boolean) => void;
   updateMaterial: (materialId: string, updates: Partial<Material>) => void;
   deleteMaterial: (materialId: string) => void;
+  // Questions & Answers
+  questions: Question[];
+  addQuestion: (lessonId: string, text: string) => void;
+  addAnswer: (questionId: string, text: string) => void;
 }
 
 const AppContext = createContext<AppState | undefined>(undefined);
@@ -61,6 +65,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     { userId: 'u4', lessonId: 'l6' },
     { userId: 'u4', lessonId: 'l7' },
   ]);
+  const [questions, setQuestions] = useState<Question[]>(mockQuestions);
 
   const login = useCallback((email: string, _password: string): boolean => {
     const user = users.find(u => u.email === email);
@@ -344,6 +349,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addAuditEntry('DELETE_MATERIAL', 'material', materialId);
   }, [addAuditEntry]);
 
+  // === QUESTIONS & ANSWERS ===
+  const addQuestion = useCallback((lessonId: string, text: string) => {
+    if (!currentUser) return;
+    const newQuestion: Question = {
+      id: `q${Date.now()}`,
+      lessonId,
+      userId: currentUser.id,
+      userName: currentUser.fullName,
+      text,
+      createdAt: new Date().toISOString(),
+      answers: [],
+    };
+    setQuestions(prev => [...prev, newQuestion]);
+    addAuditEntry('ADD_QUESTION', 'question', newQuestion.id);
+  }, [currentUser, addAuditEntry]);
+
+  const addAnswer = useCallback((questionId: string, text: string) => {
+    if (!currentUser) return;
+    setQuestions(prev => prev.map(q => {
+      if (q.id !== questionId) return q;
+      return {
+        ...q,
+        answers: [...q.answers, {
+          id: `a${Date.now()}`,
+          questionId,
+          userId: currentUser.id,
+          userName: currentUser.fullName,
+          text,
+          createdAt: new Date().toISOString(),
+        }],
+      };
+    }));
+    addAuditEntry('ADD_ANSWER', 'answer', questionId);
+  }, [currentUser, addAuditEntry]);
+
   return (
     <AppContext.Provider value={{
       currentUser,
@@ -380,6 +420,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addMaterial,
       updateMaterial,
       deleteMaterial,
+      questions,
+      addQuestion,
+      addAnswer,
     }}>
       {children}
     </AppContext.Provider>

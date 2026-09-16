@@ -1,4 +1,4 @@
-import { Course, Module, Lesson, User, AccessRequest, AuditLogEntry } from '../types';
+import { Course, Module, Lesson, User, AccessRequest, AuditLogEntry, Question } from '../types';
 
 export const mockUsers: User[] = [
   { id: 'u1', email: 'admin@azimovclub.com', fullName: 'Иванов Алексей', role: 'superadmin', status: 'active', registeredAt: '2026-01-15T10:00:00Z' },
@@ -254,4 +254,53 @@ export const mockUserCourseAccess: { userId: string; courseId: string; grantedBy
   // Новикова Анна (teacher3) имеет доступ к Minecraft и олимпиадной группе по программированию
   { userId: 'u5', courseId: 'c4', grantedBy: 'u1', grantedAt: '2026-09-08T14:00:00Z' },
   { userId: 'u5', courseId: 'c7', grantedBy: 'u1', grantedAt: '2026-09-09T15:00:00Z' },
+];
+
+// Вопросы и ответы к урокам
+export const mockQuestions: Question[] = [
+  {
+    id: 'q1',
+    lessonId: 'l1',
+    userId: 'u3',
+    userName: 'Сидорова Елена',
+    text: 'При установке mBlock на Windows 11 возникает ошибка "не удалось запустить". Как решить?',
+    createdAt: '2026-09-10T14:30:00Z',
+    answers: [
+      {
+        id: 'a1',
+        questionId: 'q1',
+        userId: 'u2',
+        userName: 'Петрова Мария',
+        text: 'Попробуйте запустить установщик от имени администратора. Также проверьте, не блокирует ли антивирус установку.',
+        createdAt: '2026-09-10T15:45:00Z',
+      },
+    ],
+  },
+  {
+    id: 'q2',
+    lessonId: 'l1',
+    userId: 'u4',
+    userName: 'Козлов Дмитрий',
+    text: 'Какая версия mBlock рекомендуется для наших занятий? Последняя или более стабильная?',
+    createdAt: '2026-09-11T09:15:00Z',
+    answers: [
+      {
+        id: 'a2',
+        questionId: 'q2',
+        userId: 'u2',
+        userName: 'Петрова Мария',
+        text: 'Рекомендую версию 5.4.0 — она наиболее стабильная и протестирована на всех наших компьютерах.',
+        createdAt: '2026-09-11T10:20:00Z',
+      },
+    ],
+  },
+  {
+    id: 'q3',
+    lessonId: 'l6',
+    userId: 'u5',
+    userName: 'Новикова Анна',
+    text: 'Студенты спрашивают, можно ли использовать Python 3.12 или лучше 3.10?',
+    createdAt: '2026-09-12T11:00:00Z',
+    answers: [],
+  },
 ];
