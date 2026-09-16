@@ -19,6 +19,7 @@ export default function CoursePage() {
   const [newAnswer, setNewAnswer] = useState<{ [key: string]: string }>({});
   const [questionAttachments, setQuestionAttachments] = useState<Attachment[]>([]);
   const [answerAttachments, setAnswerAttachments] = useState<{ [key: string]: Attachment[] }>({});
+  const [mediaViewer, setMediaViewer] = useState<{ attachment: Attachment; visible: boolean } | null>(null);
 
   const course = courses.find(c => c.id === courseId);
   const courseModules = modules.filter(m => m.courseId === courseId).sort((a, b) => a.orderIndex - b.orderIndex);
@@ -115,6 +116,14 @@ export default function CoursePage() {
       ...prev,
       [questionId]: (prev[questionId] || []).filter(att => att.id !== id),
     }));
+  };
+
+  const openMediaViewer = (attachment: Attachment) => {
+    setMediaViewer({ attachment, visible: true });
+  };
+
+  const closeMediaViewer = () => {
+    setMediaViewer(null);
   };
 
   const totalLessons = courseLessons.length;
@@ -367,14 +376,21 @@ export default function CoursePage() {
                                           src={att.url} 
                                           alt={att.name}
                                           className="w-24 h-24 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition"
-                                          onClick={() => window.open(att.url, '_blank')}
+                                          onClick={() => openMediaViewer(att)}
                                         />
                                       ) : (
-                                        <video 
-                                          src={att.url}
-                                          className="w-32 h-24 object-cover rounded-lg border border-slate-200"
-                                          controls
-                                        />
+                                        <div 
+                                          className="relative w-32 h-24 rounded-lg border border-slate-200 overflow-hidden cursor-pointer hover:opacity-90 transition"
+                                          onClick={() => openMediaViewer(att)}
+                                        >
+                                          <video 
+                                            src={att.url}
+                                            className="w-full h-full object-cover"
+                                          />
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                            <Play className="w-8 h-8 text-white" />
+                                          </div>
+                                        </div>
                                       )}
                                       <div className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded truncate">
                                         {att.name}
@@ -418,14 +434,21 @@ export default function CoursePage() {
                                                 src={att.url} 
                                                 alt={att.name}
                                                 className="w-24 h-24 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition"
-                                                onClick={() => window.open(att.url, '_blank')}
+                                                onClick={() => openMediaViewer(att)}
                                               />
                                             ) : (
-                                              <video 
-                                                src={att.url}
-                                                className="w-32 h-24 object-cover rounded-lg border border-slate-200"
-                                                controls
-                                              />
+                                              <div 
+                                                className="relative w-32 h-24 rounded-lg border border-slate-200 overflow-hidden cursor-pointer hover:opacity-90 transition"
+                                                onClick={() => openMediaViewer(att)}
+                                              >
+                                                <video 
+                                                  src={att.url}
+                                                  className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                                  <Play className="w-8 h-8 text-white" />
+                                                </div>
+                                              </div>
                                             )}
                                             <div className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded truncate">
                                               {att.name}
@@ -598,6 +621,45 @@ export default function CoursePage() {
           )}
         </div>
       </div>
+
+      {/* Media Viewer Modal */}
+      {mediaViewer && mediaViewer.visible && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={closeMediaViewer}
+        >
+          <button
+            onClick={closeMediaViewer}
+            className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <div 
+            className="max-w-5xl max-h-[90vh] relative"
+            onClick={e => e.stopPropagation()}
+          >
+            {mediaViewer.attachment.type === 'image' ? (
+              <img 
+                src={mediaViewer.attachment.url} 
+                alt={mediaViewer.attachment.name}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+              />
+            ) : (
+              <video 
+                src={mediaViewer.attachment.url}
+                className="max-w-full max-h-[85vh] rounded-lg"
+                controls
+                autoPlay
+              />
+            )}
+            
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-lg">
+              <p className="text-white text-sm font-medium">{mediaViewer.attachment.name}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
