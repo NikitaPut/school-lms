@@ -37,6 +37,12 @@ spring:
     secret-key: minioadmin
     bucket-name: azimov-lms
 
+# JWT Configuration
+jwt:
+  secret: azimov-lms-super-secret-key-for-jwt-tokens-must-be-at-least-256-bits-long-for-hs256
+  access-token-expiration: 900000      # 15 минут в миллисекундах
+  refresh-token-expiration: 604800000  # 7 дней в миллисекундах
+
 # Actuator
 management:
   endpoints:
@@ -49,3 +55,4 @@ logging:
   level:
     com.azimov.lms: DEBUG
     org.springframework.web: INFO
+    org.springframework.security: DEBUG
