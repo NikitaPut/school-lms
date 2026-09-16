@@ -4,8 +4,9 @@ import { useApp } from '../store/AppContext';
 import { 
   ArrowLeft, BookOpen, CheckCircle, Circle, ChevronDown, ChevronRight, 
   FileText, Link2, Play, Shield, Eye, AlertTriangle, Clock, Download,
-  MessageCircle, Send, User
+  MessageCircle, Send, User, Paperclip, Image, Video, X
 } from 'lucide-react';
+import { Attachment } from '../types';
 
 export default function CoursePage() {
   const { courseId } = useParams<{ courseId: string }>();
@@ -16,6 +17,8 @@ export default function CoursePage() {
   const [showWatermark, setShowWatermark] = useState(true);
   const [newQuestion, setNewQuestion] = useState('');
   const [newAnswer, setNewAnswer] = useState<{ [key: string]: string }>({});
+  const [questionAttachments, setQuestionAttachments] = useState<Attachment[]>([]);
+  const [answerAttachments, setAnswerAttachments] = useState<{ [key: string]: Attachment[] }>({});
 
   const course = courses.find(c => c.id === courseId);
   const courseModules = modules.filter(m => m.courseId === courseId).sort((a, b) => a.orderIndex - b.orderIndex);
@@ -72,6 +75,46 @@ export default function CoursePage() {
 
   const handleMarkComplete = (lessonId: string) => {
     markLessonComplete(lessonId);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'question' | 'answer', questionId?: string) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const attachment: Attachment = {
+          id: `att${Date.now()}_${Math.random()}`,
+          type: file.type.startsWith('image/') ? 'image' : 'video',
+          url: reader.result as string,
+          name: file.name,
+        };
+
+        if (target === 'question') {
+          setQuestionAttachments(prev => [...prev, attachment]);
+        } else if (questionId) {
+          setAnswerAttachments(prev => ({
+            ...prev,
+            [questionId]: [...(prev[questionId] || []), attachment],
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const removeQuestionAttachment = (id: string) => {
+    setQuestionAttachments(prev => prev.filter(att => att.id !== id));
+  };
+
+  const removeAnswerAttachment = (questionId: string, id: string) => {
+    setAnswerAttachments(prev => ({
+      ...prev,
+      [questionId]: (prev[questionId] || []).filter(att => att.id !== id),
+    }));
   };
 
   const totalLessons = courseLessons.length;
@@ -313,6 +356,33 @@ export default function CoursePage() {
                                 </span>
                               </div>
                               <p className="text-sm text-slate-700">{question.text}</p>
+                              
+                              {/* Question attachments */}
+                              {question.attachments.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {question.attachments.map(att => (
+                                    <div key={att.id} className="relative group">
+                                      {att.type === 'image' ? (
+                                        <img 
+                                          src={att.url} 
+                                          alt={att.name}
+                                          className="w-24 h-24 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition"
+                                          onClick={() => window.open(att.url, '_blank')}
+                                        />
+                                      ) : (
+                                        <video 
+                                          src={att.url}
+                                          className="w-32 h-24 object-cover rounded-lg border border-slate-200"
+                                          controls
+                                        />
+                                      )}
+                                      <div className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded truncate">
+                                        {att.name}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -337,6 +407,33 @@ export default function CoursePage() {
                                       </span>
                                     </div>
                                     <p className="text-sm text-slate-700">{answer.text}</p>
+                                    
+                                    {/* Answer attachments */}
+                                    {answer.attachments.length > 0 && (
+                                      <div className="mt-2 flex flex-wrap gap-2">
+                                        {answer.attachments.map(att => (
+                                          <div key={att.id} className="relative group">
+                                            {att.type === 'image' ? (
+                                              <img 
+                                                src={att.url} 
+                                                alt={att.name}
+                                                className="w-24 h-24 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition"
+                                                onClick={() => window.open(att.url, '_blank')}
+                                              />
+                                            ) : (
+                                              <video 
+                                                src={att.url}
+                                                className="w-32 h-24 object-cover rounded-lg border border-slate-200"
+                                                controls
+                                              />
+                                            )}
+                                            <div className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded truncate">
+                                              {att.name}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -344,26 +441,65 @@ export default function CoursePage() {
                           )}
 
                           {/* Answer input */}
-                          <div className="ml-11 flex gap-2">
-                            <input
-                              type="text"
-                              value={newAnswer[question.id] || ''}
-                              onChange={e => setNewAnswer({ ...newAnswer, [question.id]: e.target.value })}
-                              placeholder="Ответить..."
-                              className="flex-1 px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                            />
-                            <button
-                              onClick={() => {
-                                if (newAnswer[question.id]?.trim()) {
-                                  addAnswer(question.id, newAnswer[question.id]);
-                                  setNewAnswer({ ...newAnswer, [question.id]: '' });
-                                }
-                              }}
-                              disabled={!newAnswer[question.id]?.trim()}
-                              className="px-3 py-1.5 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                            </button>
+                          <div className="ml-11">
+                            <div className="flex gap-2 mb-2">
+                              <input
+                                type="text"
+                                value={newAnswer[question.id] || ''}
+                                onChange={e => setNewAnswer({ ...newAnswer, [question.id]: e.target.value })}
+                                placeholder="Ответить..."
+                                className="flex-1 px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                              />
+                              <button
+                                onClick={() => {
+                                  if (newAnswer[question.id]?.trim()) {
+                                    addAnswer(question.id, newAnswer[question.id], answerAttachments[question.id] || []);
+                                    setNewAnswer({ ...newAnswer, [question.id]: '' });
+                                    setAnswerAttachments(prev => ({ ...prev, [question.id]: [] }));
+                                  }
+                                }}
+                                disabled={!newAnswer[question.id]?.trim()}
+                                className="px-3 py-1.5 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            
+                            {/* Answer attachments preview */}
+                            {answerAttachments[question.id]?.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {answerAttachments[question.id].map(att => (
+                                  <div key={att.id} className="relative group">
+                                    {att.type === 'image' ? (
+                                      <img src={att.url} alt={att.name} className="w-16 h-16 object-cover rounded-lg border border-slate-200" />
+                                    ) : (
+                                      <video src={att.url} className="w-20 h-16 object-cover rounded-lg border border-slate-200" />
+                                    )}
+                                    <button
+                                      onClick={() => removeAnswerAttachment(question.id, att.id)}
+                                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Answer attachment upload */}
+                            <div className="flex items-center gap-2">
+                              <label className="flex items-center gap-1 px-2 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded cursor-pointer transition">
+                                <Paperclip className="w-3.5 h-3.5" />
+                                <span>Фото/Видео</span>
+                                <input
+                                  type="file"
+                                  accept="image/*,video/*"
+                                  multiple
+                                  onChange={e => handleFileUpload(e, 'answer', question.id)}
+                                  className="hidden"
+                                />
+                              </label>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -372,7 +508,7 @@ export default function CoursePage() {
                   {/* New question form */}
                   <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
                     <h4 className="text-sm font-medium text-blue-900 mb-2">Задать вопрос</h4>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mb-2">
                       <textarea
                         value={newQuestion}
                         onChange={e => setNewQuestion(e.target.value)}
@@ -383,8 +519,9 @@ export default function CoursePage() {
                       <button
                         onClick={() => {
                           if (newQuestion.trim()) {
-                            addQuestion(currentLesson.id, newQuestion);
+                            addQuestion(currentLesson.id, newQuestion, questionAttachments);
                             setNewQuestion('');
+                            setQuestionAttachments([]);
                           }
                         }}
                         disabled={!newQuestion.trim()}
@@ -392,6 +529,43 @@ export default function CoursePage() {
                       >
                         Отправить
                       </button>
+                    </div>
+                    
+                    {/* Question attachments preview */}
+                    {questionAttachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {questionAttachments.map(att => (
+                          <div key={att.id} className="relative group">
+                            {att.type === 'image' ? (
+                              <img src={att.url} alt={att.name} className="w-16 h-16 object-cover rounded-lg border border-blue-200" />
+                            ) : (
+                              <video src={att.url} className="w-20 h-16 object-cover rounded-lg border border-blue-200" />
+                            )}
+                            <button
+                              onClick={() => removeQuestionAttachment(att.id)}
+                              className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Question attachment upload */}
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1 px-3 py-1.5 text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100 rounded-lg cursor-pointer transition border border-blue-200">
+                        <Paperclip className="w-3.5 h-3.5" />
+                        <span>Прикрепить фото или видео</span>
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          multiple
+                          onChange={e => handleFileUpload(e, 'question')}
+                          className="hidden"
+                        />
+                      </label>
+                      <span className="text-xs text-blue-600">Можно прикрепить несколько файлов</span>
                     </div>
                   </div>
                 </div>
