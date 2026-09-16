@@ -4,9 +4,10 @@
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(255) PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'active',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -137,12 +138,13 @@ CREATE INDEX IF NOT EXISTS idx_answers_question ON answers(question_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id, created_at);
 
 -- Тестовые данные: пользователи
-INSERT INTO users (id, email, full_name, role, status, registered_at) VALUES
-('u1', 'admin@azimovclub.com', 'Иванов Алексей', 'superadmin', 'active', '2026-01-15 10:00:00'),
-('u2', 'methodist@azimovclub.com', 'Петрова Мария', 'methodist', 'active', '2026-02-01 14:30:00'),
-('u3', 'teacher1@azimovclub.com', 'Сидорова Елена', 'teacher', 'active', '2026-03-10 09:15:00'),
-('u4', 'teacher2@azimovclub.com', 'Козлов Дмитрий', 'teacher', 'active', '2026-04-05 11:20:00'),
-('u5', 'teacher3@azimovclub.com', 'Новикова Анна', 'teacher', 'active', '2026-05-20 16:45:00')
+-- Пароль для всех: password123 (BCrypt хеш)
+INSERT INTO users (id, email, password_hash, full_name, role, status, registered_at) VALUES
+('u1', 'admin@azimovclub.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Иванов Алексей', 'ADMIN', 'ACTIVE', '2026-01-15 10:00:00'),
+('u2', 'methodist@azimovclub.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Петрова Мария', 'METHODIST', 'ACTIVE', '2026-02-01 14:30:00'),
+('u3', 'teacher1@azimovclub.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Сидорова Елена', 'TEACHER', 'ACTIVE', '2026-03-10 09:15:00'),
+('u4', 'teacher2@azimovclub.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Козлов Дмитрий', 'TEACHER', 'ACTIVE', '2026-04-05 11:20:00'),
+('u5', 'teacher3@azimovclub.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Новикова Анна', 'TEACHER', 'ACTIVE', '2026-05-20 16:45:00')
 ON CONFLICT (id) DO NOTHING;
 
 -- Тестовые данные: курсы
