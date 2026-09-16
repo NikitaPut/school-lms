@@ -639,21 +639,21 @@ export default function CoursePage() {
             className="max-w-5xl max-h-[90vh] relative"
             onClick={e => e.stopPropagation()}
           >
-            {mediaViewer.attachment.type === 'image' ? (
-              <img 
-                src={mediaViewer.attachment.url} 
-                alt={mediaViewer.attachment.name}
-                className="max-w-full max-h-[85vh] object-contain rounded-lg"
-              />
-            ) : (
-              <video 
-                src={mediaViewer.attachment.url}
-                className="max-w-full max-h-[85vh] rounded-lg"
-                controls
-                autoPlay
-              />
-            )}
-            
+      {mediaViewer.attachment.type === 'image' ? (
+        <img 
+          src={mediaViewer.attachment.url} 
+          alt={mediaViewer.attachment.name}
+          className="max-w-full max-h-[85vh] object-contain rounded-lg"
+        />
+      ) : (
+        <video 
+          src={mediaViewer.attachment.url}
+          className="max-w-full max-h-[85vh] rounded-lg bg-black"
+          controls
+          playsInline
+          preload="metadata"
+        />
+      )}            
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-lg">
               <p className="text-white text-sm font-medium">{mediaViewer.attachment.name}</p>
             </div>
