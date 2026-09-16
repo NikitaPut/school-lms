@@ -75,6 +75,13 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+export interface Attachment {
+  id: string;
+  type: 'image' | 'video';
+  url: string;
+  name: string;
+}
+
 export interface Question {
   id: string;
   lessonId: string;
@@ -83,6 +90,7 @@ export interface Question {
   text: string;
   createdAt: string;
   answers: Answer[];
+  attachments: Attachment[];
 }
 
 export interface Answer {
@@ -92,6 +100,7 @@ export interface Answer {
   userName: string;
   text: string;
   createdAt: string;
+  attachments: Attachment[];
 }
 
 export interface UserCourseAccess {

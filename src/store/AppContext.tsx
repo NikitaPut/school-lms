@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, Course, AccessRequest, AuditLogEntry, Module, Lesson, Material, Question } from '../types';
+import { User, Course, AccessRequest, AuditLogEntry, Module, Lesson, Material, Question, Attachment } from '../types';
 import { mockUsers, mockCourses, mockAccessRequests, mockAuditLog, mockUserCourseAccess, mockModules, mockLessons, mockQuestions } from '../data/mockData';
 
 interface AppState {
@@ -43,8 +43,8 @@ interface AppState {
   deleteMaterial: (materialId: string) => void;
   // Questions & Answers
   questions: Question[];
-  addQuestion: (lessonId: string, text: string) => void;
-  addAnswer: (questionId: string, text: string) => void;
+  addQuestion: (lessonId: string, text: string, attachments?: Attachment[]) => void;
+  addAnswer: (questionId: string, text: string, attachments?: Attachment[]) => void;
 }
 
 const AppContext = createContext<AppState | undefined>(undefined);
@@ -350,7 +350,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [addAuditEntry]);
 
   // === QUESTIONS & ANSWERS ===
-  const addQuestion = useCallback((lessonId: string, text: string) => {
+  const addQuestion = useCallback((lessonId: string, text: string, attachments: Attachment[] = []) => {
     if (!currentUser) return;
     const newQuestion: Question = {
       id: `q${Date.now()}`,
@@ -360,12 +360,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       text,
       createdAt: new Date().toISOString(),
       answers: [],
+      attachments,
     };
     setQuestions(prev => [...prev, newQuestion]);
     addAuditEntry('ADD_QUESTION', 'question', newQuestion.id);
   }, [currentUser, addAuditEntry]);
 
-  const addAnswer = useCallback((questionId: string, text: string) => {
+  const addAnswer = useCallback((questionId: string, text: string, attachments: Attachment[] = []) => {
     if (!currentUser) return;
     setQuestions(prev => prev.map(q => {
       if (q.id !== questionId) return q;
@@ -378,6 +379,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           userName: currentUser.fullName,
           text,
           createdAt: new Date().toISOString(),
+          attachments,
         }],
       };
     }));

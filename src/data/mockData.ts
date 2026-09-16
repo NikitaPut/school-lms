@@ -265,6 +265,7 @@ export const mockQuestions: Question[] = [
     userName: 'Сидорова Елена',
     text: 'При установке mBlock на Windows 11 возникает ошибка "не удалось запустить". Как решить?',
     createdAt: '2026-09-10T14:30:00Z',
+    attachments: [],
     answers: [
       {
         id: 'a1',
@@ -273,6 +274,7 @@ export const mockQuestions: Question[] = [
         userName: 'Петрова Мария',
         text: 'Попробуйте запустить установщик от имени администратора. Также проверьте, не блокирует ли антивирус установку.',
         createdAt: '2026-09-10T15:45:00Z',
+        attachments: [],
       },
     ],
   },
@@ -283,6 +285,7 @@ export const mockQuestions: Question[] = [
     userName: 'Козлов Дмитрий',
     text: 'Какая версия mBlock рекомендуется для наших занятий? Последняя или более стабильная?',
     createdAt: '2026-09-11T09:15:00Z',
+    attachments: [],
     answers: [
       {
         id: 'a2',
@@ -291,6 +294,7 @@ export const mockQuestions: Question[] = [
         userName: 'Петрова Мария',
         text: 'Рекомендую версию 5.4.0 — она наиболее стабильная и протестирована на всех наших компьютерах.',
         createdAt: '2026-09-11T10:20:00Z',
+        attachments: [],
       },
     ],
   },
@@ -301,6 +305,7 @@ export const mockQuestions: Question[] = [
     userName: 'Новикова Анна',
     text: 'Студенты спрашивают, можно ли использовать Python 3.12 или лучше 3.10?',
     createdAt: '2026-09-12T11:00:00Z',
+    attachments: [],
     answers: [],
   },
 ];
